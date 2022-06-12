@@ -32,33 +32,27 @@ endif
 
 
 all:$(EXECUTABLE)
-	@cls
 	@echo Success.
 
 
 run: all
-	@cls
 	@./$(EXECUTABLE)
 
 
 $(EXECUTABLE):$(OBJS)
-	@cls
 	@echo Linking $@
 
-# ifeq ($(OS),Windows_NT)
-# 	if not exist $(dir $@) mkdir "$(dir $@)"
-# else
-# #  PLATFORM="Unix-Like"
-# 	@mkdir -p $(dir $@)
-# endif
+ifeq ($(OS),Windows_NT)
+	@if not exist $(dir $@) mkdir "$(dir $@)"
+else
+#  PLATFORM="Unix-Like"
+	@mkdir -p $(dir $@)
+endif
 	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ -o $@
 
 
 build/%.o: src/%.cpp 
-	@cls
-	@echo Compiling...
-	@echo $@
-	@echo [$(foreach i,$(OBJS), $(if $(findstring $@, $(i)),*))]
+	@echo Compiling $@
 
 ifeq ($(OS),Windows_NT)
 	@if not exist $(dir $@) mkdir "$(dir $@)"
