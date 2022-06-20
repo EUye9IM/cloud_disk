@@ -27,21 +27,9 @@ struct FNode {
 
 name 为文件（夹）名字，is_file 为 true 时该节点为文件。
 
-### Path
-
-是 `std::vector<std::string>` 的别名。
-
-一般第一个元素是用户id
-
 ## 头文件
 
 `file_system_manager.h`
-
-## 构造函数
-
-`FileSystemManager(SqlConfig *sql_config);`
-
-需要提供数据库连接配置。
 
 ## 成员函数
 
@@ -51,34 +39,48 @@ name 为文件（夹）名字，is_file 为 true 时该节点为文件。
 
 #### 新建文件
 
-`int makeFile(const Path &path, const std::string &file_name, const std::string &file_hash);`
+`int makeFile(const std::string &file_path, const std::string &file_hash);`
 
 #### 新建文件夹
 
-`int makeFolder(const Path &path, const std::string &folder_name);`
+`int makeFolder(const std::string &folder_path);`
 
 #### 列出文件、文件夹
 
-`int list(const Path &path, std::vector<FNode> &fnode_list);`
+`int list(const std::string &folder_path, std::vector<FNode> &fnode_list);`
 
 #### 文件、文件夹移动/改名
 
-`int move(const Path &old_path, const std::string &old_name, const Path &new_path, const std::string &new_name);`
+`int move(const std::string &old_path, const std::string &new_path);`
 
 #### 文件、文件夹复制/改名
 
-`int copy(const Path &old_path, const std::string &old_name, const Path &new_path, const std::string &new_name);`
+`int copy(const std::string &old_path, const std::string &new_path);`
 
 #### 移除文件/文件夹
 
-`int remove(const Path &path, const std::string &name, std::vector<std::string> &should_be_removed_hashes);`
+`int remove(const std::string &path, std::vector<std::string> &should_be_removed_hashes);`
 
 #### 获得一个文件的哈希值
 
-`int getHash(const Path &path, std::string &hash);`
+`int getHash(const std::string &path, std::string &hash);`
 
 ### 其他
 
 #### 获得错误码信息
 
-`static const char *error(int errno);`
+`static const char *error(int error_no);`
+
+error_no 要是 _FileSystemManager 命名空间中的常量。
+
+#### 初始化数据库
+
+数据库建表之类的操作。
+
+`int initDatabase();`
+
+#### 获取数据库错误信息
+
+有时候会有数据库错误的信息，这个可以取到错误信息。
+
+`const char* getMysqlError();`

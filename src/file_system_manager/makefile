@@ -1,18 +1,16 @@
 CXX			= g++
 CXX_FLAGS	= -Wall -Werror -O2 -std=c++11
-EXTRA_NAME	= cpp
 
-SRC			= src
-INCLUDE		= include
-BUILD		= build
+INCLUDE		= ../../include
 
-EXECUTABLE	= clouddiskd.exe
+EXECUTABLE	= test
 
 LIBS		= -lmariadb
 
+SRCS		= $(wildcard *.cpp)
+OBJS		= $(patsubst %.cpp,%.o,$(SRCS))
 
-OBJS		= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o,$(wildcard $(SRC)/*.cpp  $(SRC)/*/*.cpp $(SRC)/*/*/*.cpp $(SRC)/*/*/*/*.cpp))
-
+RM			=
 ifeq ($(OS),Windows_NT)
 # PLATFORM="Windows" 
 RM			= del /s /q /f 
@@ -20,6 +18,7 @@ else
 #  PLATFORM="Unix-Like"
 RM			= rm -f
 endif
+RMDIR		=
 ifeq ($(OS),Windows_NT)
 # PLATFORM="Windows" 
 RMDIR		= rmdir /s /q
@@ -41,34 +40,17 @@ run: all
 
 $(EXECUTABLE):$(OBJS)
 	@echo Linking $@
-
-ifeq ($(OS),Windows_NT)
-	@if not exist $(dir $@) mkdir "$(dir $@)"
-else
-#  PLATFORM="Unix-Like"
-	@mkdir -p $(dir $@)
-endif
 	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ $(LIBS) -o $@
 
 
-build/%.o: src/%.cpp 
+%.o: %.cpp 
 	@echo Compiling $@
-
-ifeq ($(OS),Windows_NT)
-	@if not exist $(dir $@) mkdir "$(dir $@)"
-else
-#  PLATFORM="Unix-Like"
-	@mkdir -p $(dir $@)
-endif
 	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c $< -o $@
 
 
 clean:
-	@echo remove $(BUILD)
-	@$(RMDIR) $(BUILD)
+	@echo remove $(OBJS)
+	@$(RM) $(OBJS)
 	@echo remove $(EXECUTABLE)
 	@$(RM) $(EXECUTABLE)
-
-
-
 

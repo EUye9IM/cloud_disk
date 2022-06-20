@@ -3,6 +3,9 @@
 struct SqlConfig {
 	const char *host;
 	int port;
+	const char *user;
+	const char *pass;
 	const char *database_name;
+	const char *charset;
 };
 #endif
