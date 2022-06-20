@@ -4,6 +4,7 @@
 #include <cfgps/check.h>
 #include <configs.h>
 #include <iostream>
+
 using namespace std;
 
 int init(int argc, char **argv, Config &config) {
