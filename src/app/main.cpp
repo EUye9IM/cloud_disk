@@ -5,6 +5,8 @@
 #include <configs.h>
 #include <iostream>
 
+#include "command_handler.h"
+
 using namespace std;
 
 int init(int argc, char **argv, Config &config) {
@@ -75,5 +77,9 @@ int main(int argc, char **argv) {
 					"\tlog_path:%s\n\n",
 					app_config.is_daemon ? "true" : "false", app_config.port,
 					app_config.debug_mode ? "true" : "false", app_config.log_path);
+
+#ifdef __ANAKIN_DEBUG__
+	CommandHandlerDebug();
+#endif
 	return 0;
 }

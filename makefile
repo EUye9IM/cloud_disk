@@ -48,7 +48,7 @@ else
 #  PLATFORM="Unix-Like"
 	@mkdir -p $(dir $@)
 endif
-	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ -o $@
+	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ -o $@ -lpthread
 
 
 build/%.o: src/%.cpp 
