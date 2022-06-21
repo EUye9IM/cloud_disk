@@ -10,6 +10,7 @@
 
 #include <string>
 #include "httplib.h"
+#include "jwt-cpp/token.hpp"
 
 #ifdef __ANAKIN_DEBUG__
 void CommandHandlerDebug();
@@ -31,6 +32,15 @@ protected:
     void userSignup();
     void userLogout();
     void userChangepass();
+    /* 文件路由配置 */
+    void fileRouterConfigure();
+    void fileList();
+    void fileNewFolder();
+    void fileRename();
+    void fileDelete();
+    void fileCopy();
+    void fileMove();
+
     
 
 private:

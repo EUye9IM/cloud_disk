@@ -3,6 +3,7 @@
  **/
 
 #include "command_handler.h"
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -39,6 +40,8 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
 
     /* 用户相关路由设置 */
     userRouterConfigure();
+    /* 文件路由 */
+    fileRouterConfigure();
 
     if (server_.listen(ip_address.c_str(), port) == false) {
         cout << "listen " << ip_address << ":" << port << " failure!\n";
@@ -55,7 +58,17 @@ void CommandHandler::userRouterConfigure()
     userSignup();
     userChangepass();
     userLogout();
+}
 
+/* 文件路由配置 */
+void CommandHandler::fileRouterConfigure()
+{
+    fileList();
+    fileNewFolder();
+    fileRename();
+    fileDelete();
+    fileCopy();
+    fileMove();
 }
 
 /* 用户登录 */
@@ -201,7 +214,7 @@ void CommandHandler::userChangepass()
     });
 }
 
-void CommandHandler::verify_token(const httplib::Request& req) const
+void CommandHandler::verify_token(const httplib::Request& req) const 
 {
     const auto token = req.get_header_value("Authorization");
 
@@ -216,4 +229,238 @@ void CommandHandler::verify_token(const httplib::Request& req) const
         cout << e.what() << endl;
         throw Anakin::token_exception();
     }
+}
+
+/* 文件列表 */
+void CommandHandler::fileList()
+{
+    server_.Post("/api/file/list", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "list success";
+        vector<json> files;
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto path = req_body.at("path");
+
+            /// @TODO: 获取目录下的文件信息
+            
+            /// 测试部分
+            // json file;
+            // file["name"] = "filename";
+            // file["type"] = "file";
+            // file["size"] = 1024;
+            // file["time"] = "May 2033";
+            // files.push_back(file);
+            // files.push_back(file);
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+        res_body["files"] = files;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+void CommandHandler::fileNewFolder()
+{
+    server_.Post("/api/file/newfolder", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "new folder success";
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto cwd = req_body.at("cwd");
+            auto folder_name = req_body.at("foldername");
+
+            /// @TODO: 创建文件夹
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+void CommandHandler::fileRename()
+{
+    server_.Post("/api/file/rename", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "rename success";
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto cwd = req_body.at("cwd");
+            auto old_name = req_body.at("oldname");
+            auto new_name = req_body.at("newname");
+
+            /// @TODO: 文件改名
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+void CommandHandler::fileDelete()
+{
+    server_.Post("/api/file/delete", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "file delete success";
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto paths = req_body.at("paths");
+
+            /// @TODO: 批量删除文件
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+void CommandHandler::fileCopy()
+{
+    server_.Post("/api/file/copy", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "copy success";
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto old_cwd = req_body.at("oldcwd");
+            auto new_cwd = req_body.at("newcwd");
+            auto files = req_body.at("files");
+
+            /// @TODO: 复制文件操作
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+void CommandHandler::fileMove()
+{
+    server_.Post("/api/file/move", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "move success";
+
+        try {
+            verify_token(req);
+            // 获取到绝对路径目录
+            auto old_cwd = req_body.at("oldcwd");
+            auto new_cwd = req_body.at("newcwd");
+            auto files = req_body.at("files");
+
+            /// @TODO: 移动文件操作
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+
+        res.set_content(res_body.dump(), "application/json");
+    });
+
 }
