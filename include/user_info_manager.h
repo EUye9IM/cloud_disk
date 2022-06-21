@@ -2,9 +2,9 @@
 #define CLOUD_DISK_USER_INFO_MANAGER
 #include <sql_config.h>
 
+#include <mutex>
 #include <mysql/mysql.h>
 #include <string>
-#include <vector>
 
 class UserInfoManager {
 public:
@@ -24,6 +24,7 @@ public:
 private:
 	MYSQL *sql;
 	std::string _mysql_error_msg;
+	std::mutex _lock;
 };
 
 namespace _UserInfoManager {
