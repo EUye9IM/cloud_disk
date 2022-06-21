@@ -15,6 +15,7 @@ public:
 	int add(const std::string &user, const std::string &pass);
 	int check(const std::string &user, const std::string &pass);
 	int change(const std::string &user, const std::string &pass);
+	int del(const std::string &user);
 
 	int initDatabase();
 	static const char *error(int error_no);
@@ -32,6 +33,7 @@ const int _RET_NO_CONN = -2;
 const int _RET_CONN = -3;
 const int _RET_SQL_ERR = -4;
 const int _RET_USER_EXIST = -5;
+const int _RET_CHECK_FAILED = -6;
 } // namespace _UserInfoManager
 
 #endif

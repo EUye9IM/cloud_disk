@@ -4,12 +4,17 @@
 
 using namespace _FileSystemManager;
 
-const char *_SQL_INIT_DATABASE = "\
+static const char *_SQL_INIT_DATABASE = "\
 DROP TABLE IF EXISTS node;\
 CREATE TABLE node(\
 path char(255) NOT NULL,\
 hash char(60),\
-PRIMARY KEY (path));";
+PRIMARY KEY (path));\
+DROP TABLE IF EXISTS filecnt;\
+CREATE TABLE filecnt(\
+hash char(60),\
+cnt int(11) not null,\
+PRIMARY KEY (hash));";
 
 FileSystemManager::FileSystemManager() {
 	sql = nullptr;
@@ -47,6 +52,7 @@ int FileSystemManager::initDatabase() {
 		_mysql_error_msg = mysql_error(sql);
 		return _RET_SQL_ERR;
 	}
+	mysql_stmt_close(stmt);
 	return _RET_OK;
 }
 const char *FileSystemManager::getMysqlError() { return _mysql_error_msg; }
