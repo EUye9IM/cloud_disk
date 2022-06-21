@@ -13,7 +13,7 @@ PRIMARY KEY (path));";
 
 FileSystemManager::FileSystemManager() {
 	sql = nullptr;
-	mysql_error_msg = "";
+	_mysql_error_msg = "";
 }
 FileSystemManager::~FileSystemManager() {
 	if (sql)
@@ -31,7 +31,7 @@ int FileSystemManager::connect(const SqlConfig &sql_config) {
 	if (!mysql_real_connect(sql, sql_config.host, sql_config.user,
 							sql_config.pass, sql_config.database_name,
 							sql_config.port, NULL, CLIENT_MULTI_STATEMENTS)) {
-		mysql_error_msg = mysql_error(sql);
+		_mysql_error_msg = mysql_error(sql);
 		mysql_close(sql);
 		sql = nullptr;
 		return _RET_CONN;
@@ -44,11 +44,12 @@ int FileSystemManager::initDatabase() {
 	if (!sql)
 		return _RET_NO_CONN;
 	if (mysql_query(sql, _SQL_INIT_DATABASE)) {
-		mysql_error_msg = mysql_error(sql);
+		_mysql_error_msg = mysql_error(sql);
 		return _RET_SQL_ERR;
 	}
 	return _RET_OK;
 }
+const char *FileSystemManager::getMysqlError() { return _mysql_error_msg; }
 const char *FileSystemManager::error(int error_no) {
 	switch (error_no) {
 	case _RET_OK:
