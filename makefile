@@ -6,9 +6,9 @@ SRC			= src
 INCLUDE		= include
 BUILD		= build
 
-EXECUTABLE	= clouddiskd.exe
+EXECUTABLE	= clouddisk.exe
 
-LIBS		= -lmariadb -lpthread
+LIBS		= -lmariadb -lpthread -lcrypto
 
 
 OBJS		= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o,$(wildcard $(SRC)/*.cpp  $(SRC)/*/*.cpp $(SRC)/*/*/*.cpp $(SRC)/*/*/*/*.cpp))

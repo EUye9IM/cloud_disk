@@ -5,10 +5,12 @@
 #include "command_handler.h"
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <string>
 
 #include "httplib.h"
 #include "json.hpp"
+#include "jwt-cpp/token.hpp"
 
 using json = nlohmann::json;
 using namespace httplib;
@@ -62,7 +64,7 @@ void CommandHandler::userLogin()
     server_.Post("/api/login", [](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
-        std::string msg = "登录成功";
+        std::string msg = "login success";
 
         try {
             auto user = req_body.at("user");
@@ -70,12 +72,18 @@ void CommandHandler::userLogin()
             
             // TODO:此处需要数据库处理用户
             // ...
+
+            /* 登录成功需要携带token返回 */
+            auto token = Anakin::Token::create();
+            token = "Bearer " + token;
+            res.set_header("Authorization", token);
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "data error!";
         }
 
-        
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
@@ -90,7 +98,7 @@ void CommandHandler::userSignup()
     server_.Post("/api/signup", [](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
-        std::string msg = "注册成功";
+        std::string msg = "sign up success";
 
         try {
             auto user = req_body.at("user");
@@ -107,6 +115,8 @@ void CommandHandler::userSignup()
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "data error!";
         }
 
         
@@ -134,6 +144,8 @@ void CommandHandler::userLogout()
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
         }
         
         json res_body;
@@ -147,12 +159,14 @@ void CommandHandler::userLogout()
 /* 用户改密 */
 void CommandHandler::userChangepass()
 {
-    server_.Post("/api/changepass", [](const Request& req, Response& res) {
+    server_.Post("/api/changepass", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "change password success";
 
         try {
+            verify_token(req);
+
             auto user = req_body.at("user");
             auto old_password = req_body.at("oldpassword");
             auto new_password = req_body.at("newpassword");
@@ -170,6 +184,13 @@ void CommandHandler::userChangepass()
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
         }
         
         json res_body;
@@ -178,4 +199,21 @@ void CommandHandler::userChangepass()
 
         res.set_content(res_body.dump(), "application/json");
     });
+}
+
+void CommandHandler::verify_token(const httplib::Request& req) const
+{
+    const auto token = req.get_header_value("Authorization");
+
+    if (token.substr(0, 7) != "Bearer ") {
+        cout << "token is not bearer" << endl;
+        throw Anakin::token_exception();
+    }
+
+    try {
+        Anakin::Token::verify(token.substr(7));
+    } catch (const std::exception& e) {
+        cout << e.what() << endl;
+        throw Anakin::token_exception();
+    }
 }

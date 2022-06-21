@@ -4,7 +4,7 @@
 
 using namespace _UserInfoManager;
 
-const char *_SQL_INIT_DATABASE = "\
+static const char *_SQL_INIT_DATABASE = "\
 DROP TABLE IF EXISTS userinfo;\
 CREATE TABLE userinfo(\
 name char(255) NOT NULL,\
