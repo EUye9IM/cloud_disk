@@ -8,7 +8,7 @@ BUILD		= build
 
 EXECUTABLE	= clouddiskd.exe
 
-LIBS		= -lmariadb
+LIBS		= -lmariadb -lpthread
 
 
 OBJS		= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o,$(wildcard $(SRC)/*.cpp  $(SRC)/*/*.cpp $(SRC)/*/*/*.cpp $(SRC)/*/*/*/*.cpp))
