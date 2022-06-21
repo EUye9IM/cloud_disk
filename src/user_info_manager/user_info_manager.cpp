@@ -12,15 +12,18 @@ pass char(50),\
 PRIMARY KEY (name));";
 
 UserInfoManager::UserInfoManager() {
+	std::lock_guard<std::mutex> lock(_lock);
 	sql = nullptr;
 	_mysql_error_msg = "";
 }
 UserInfoManager::~UserInfoManager() {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (sql)
 		mysql_close(sql);
 	return;
 }
 int UserInfoManager::connect(const SqlConfig &sql_config) {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (sql) {
 		return _RET_CONNECTED;
 	}
@@ -40,6 +43,7 @@ int UserInfoManager::connect(const SqlConfig &sql_config) {
 	return _RET_OK;
 }
 int UserInfoManager::add(const std::string &user, const std::string &pass) {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
 		return _RET_NO_CONN;
 	static MYSQL_STMT *stmt = nullptr;
@@ -80,6 +84,7 @@ int UserInfoManager::add(const std::string &user, const std::string &pass) {
 	return _RET_OK;
 }
 int UserInfoManager::check(const std::string &user, const std::string &pass) {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
 		return _RET_NO_CONN;
 	static MYSQL_STMT *stmt = nullptr;
@@ -140,6 +145,7 @@ int UserInfoManager::check(const std::string &user, const std::string &pass) {
 	return _RET_CHECK_FAILED;
 }
 int UserInfoManager::change(const std::string &user, const std::string &pass) {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
 		return _RET_NO_CONN;
 	static MYSQL_STMT *stmt = nullptr;
@@ -180,6 +186,7 @@ int UserInfoManager::change(const std::string &user, const std::string &pass) {
 	return _RET_OK;
 }
 int UserInfoManager::del(const std::string &user) {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
 		return _RET_NO_CONN;
 	static MYSQL_STMT *stmt = nullptr;
@@ -213,6 +220,7 @@ int UserInfoManager::del(const std::string &user) {
 	return _RET_OK;
 }
 int UserInfoManager::initDatabase() {
+	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
 		return _RET_NO_CONN;
 	if (mysql_query(sql, _SQL_INIT_DATABASE)) {
@@ -223,6 +231,7 @@ int UserInfoManager::initDatabase() {
 	return _RET_OK;
 }
 const char *UserInfoManager::getMysqlError() {
+	std::lock_guard<std::mutex> lock(_lock);
 	return _mysql_error_msg.c_str();
 }
 const char *UserInfoManager::error(int error_no) {
