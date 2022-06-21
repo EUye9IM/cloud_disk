@@ -1,69 +1,85 @@
-# FileSystemManager
+# UserInfoManager
 
 ## 类型
 
-### FileSystemManager 类
+### UserInfoManager 类
 
-维护基于数据库的文件系统。提供以下功能
+维护用户数据。主要功能有：
 
-- makeFile 新建文件
-- makeDir 新建文件夹
-- list 列出文件、文件夹
-- move 文件、文件夹移动/改名
-- copy 文件、文件夹复制/改名
-- remove 移除文件/文件夹
-- getHash 获得一个文件的哈希值
-
-### FNode 类
-
-描述一个文件（夹）节点，用于 list 的返回
-
-```c++
-struct FNode {
-	std::string name;
-	bool is_file;
-};
-```
-
-name 为文件（夹）名字，is_file 为 true 时该节点为文件。
+- 注册
+- 登录
+- 改密
+- 注销
 
 ## 头文件
 
-`file_system_manager.h`
+`user_info_manager.h`
 
 ## 成员函数
 
-### 文件系统
+所有返回值int的函数皆成功返回0.
 
-以下所有函数返回 0 为成功，返回负值为错误。
+返回值可以使用成员函数 `static const char *error(int error_no)` 获取错误信息。
 
-#### 新建文件
+特殊地，当返回值为 `_UserInfoManager::_RET_SQL_ERR` 时调用 `const char *getMysqlError()` 获得额外的错误信息。一般用不上，出了这个错基本是我写错了（或者数据库连接失败），所以这基本用于调试。
 
-`int makeFile(const std::string &file_path, const std::string &file_hash);`
+### 数据库相关
 
-#### 新建文件夹
+#### 连接数据库
 
-`int makeFolder(const std::string &folder_path);`
+`int connect(const SqlConfig &sql_config);`
 
-#### 列出文件、文件夹
+示例：
 
-`int list(const std::string &folder_path, std::vector<FNode> &fnode_list);`
+```c++
+SqlConfig sql_config = {
+	.host = "127.0.0.1",
+	.port = 3306,
+	.user = "root",
+	.pass = "root",
+	.database_name = "disk",
+	.charset = "UTF-8",
+};
+UserInfoManager um;
+if (int ret = um.connect(sql_config)) {
+	cout << um.error(ret) << endl;
+	if (ret == _UserInfoManager::_RET_SQL_ERR)
+		cout << um.getMysqlError() << endl;
+	return 0;
+}
+```
 
-#### 文件、文件夹移动/改名
+#### 初始化数据库
 
-`int move(const std::string &old_path, const std::string &new_path);`
+数据库建表之类的操作，系统初始化时使用。
 
-#### 文件、文件夹复制/改名
+`int initDatabase();`
 
-`int copy(const std::string &old_path, const std::string &new_path);`
+### 用户管理
 
-#### 移除文件/文件夹
+#### 注册
 
-`int remove(const std::string &path, std::vector<std::string> &should_be_removed_hashes);`
+`int add(const std::string &user, const std::string &pass);`
 
-#### 获得一个文件的哈希值
+成功返回 0，失败基本是用户重名。
 
-`int getHash(const std::string &path, std::string &hash);`
+#### 登录
+
+`int check(const std::string &user, const std::string &pass);`
+
+成功返回 0，失败基本是用户名或密码错误。
+
+#### 改密
+
+`int change(const std::string &user, const std::string &pass);`
+
+成功返回 0，基本不失败。即使用户不存在也返回0，虽然不会有任何作用。
+
+#### 注销
+
+`int del(const std::string &user);`
+
+成功返回 0，基本不失败。即使用户不存在也返回0，虽然不会有任何作用。
 
 ### 其他
 
@@ -71,13 +87,7 @@ name 为文件（夹）名字，is_file 为 true 时该节点为文件。
 
 `static const char *error(int error_no);`
 
-error_no 要是 _FileSystemManager 命名空间中的常量。
-
-#### 初始化数据库
-
-数据库建表之类的操作。
-
-`int initDatabase();`
+error_no 是 _UserInfoManager 命名空间中的常量。
 
 #### 获取数据库错误信息
 
