@@ -152,9 +152,7 @@ int UserInfoManager::change(const std::string &user, const std::string &pass) {
 	static MYSQL_BIND bind[2];
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(
-			stmt,
-			"UPDATE userinfo SET pass = SHA1(?) WHERE name = ?",
-			-1)) {
+			stmt, "UPDATE userinfo SET pass = SHA1(?) WHERE name = ?", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -168,7 +166,6 @@ int UserInfoManager::change(const std::string &user, const std::string &pass) {
 	bind[1].buffer_type = MYSQL_TYPE_STRING;
 	bind[1].buffer = (void *)user.c_str();
 	bind[1].buffer_length = user.length();
-
 
 	if (mysql_stmt_bind_param(stmt, bind)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
@@ -192,8 +189,7 @@ int UserInfoManager::del(const std::string &user) {
 	static MYSQL_STMT *stmt = nullptr;
 	static MYSQL_BIND bind;
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(
-			stmt, "DELETE FROM userinfo WHERE name = ?", -1)) {
+	if (mysql_stmt_prepare(stmt, "DELETE FROM userinfo WHERE name = ?", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -227,7 +223,8 @@ int UserInfoManager::initDatabase() {
 		_mysql_error_msg = mysql_error(sql);
 		return _RET_SQL_ERR;
 	}
-	mysql_next_result(sql);
+	while (!mysql_next_result(sql))
+		;
 	return _RET_OK;
 }
 const char *UserInfoManager::getMysqlError() {
