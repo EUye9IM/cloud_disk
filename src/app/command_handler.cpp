@@ -44,10 +44,10 @@ CommandHandler::CommandHandler(const std::string ip_address, const int port)
 {
     // 初始并创建数据库
     /// \TODO: 数据库连接不成功
-    // if (!initUserManager()) {
-    //     LogC::log_println("userinfomanager init failure.");
-    //     exit(EXIT_FAILURE);
-    // }
+    if (!initUserManager()) {
+        LogC::log_println("userinfomanager init failure.");
+        exit(EXIT_FAILURE);
+    }
 
     // 将会进入线程阻塞中
     if (initServer(ip_address, port) < 0) {
