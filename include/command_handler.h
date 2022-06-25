@@ -49,7 +49,7 @@ protected:
 
 private:
     /* 验证response的token，抛出token_exception异常 */
-    void verify_token(const httplib::Request&) const;
+    std::string verify_token(const httplib::Request&) const;
 
     /* http server */
     httplib::Server server_;

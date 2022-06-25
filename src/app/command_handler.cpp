@@ -30,6 +30,8 @@ void CommandHandlerDebug()
 }
 #endif
 
+// 数据库配置
+// 首先需要创建数据库 disk
 static SqlConfig sql_config = {
     .host = "127.0.0.1",
     .port = 3306,
@@ -43,7 +45,6 @@ CommandHandler::CommandHandler(const std::string ip_address, const int port)
     : user_manager_(std::make_unique<UserInfoManager>())
 {
     // 初始并创建数据库
-    /// \TODO: 数据库连接不成功
     if (!initUserManager()) {
         LogC::log_println("userinfomanager init failure.");
         exit(EXIT_FAILURE);
@@ -82,15 +83,15 @@ int CommandHandler::initUserManager()
     int ret;
 	if ((ret = user_manager_->connect(sql_config))) {
 		cout << user_manager_->error(ret) << endl;
-		if (ret == _UserInfoManager::_RET_SQL_ERR)
-			cout << user_manager_->getMysqlError() << endl;
+		// if (ret == _UserInfoManager::_RET_SQL_ERR)
+        cout << user_manager_->getMysqlError() << endl;
 		return 0;
 	}
 
 	if ((ret = user_manager_->initDatabase())) {
 		cout << user_manager_->error(ret) << endl;
-		if (ret == _UserInfoManager::_RET_SQL_ERR)
-			cout << user_manager_->getMysqlError() << endl;
+		// if (ret == _UserInfoManager::_RET_SQL_ERR)
+        cout << user_manager_->getMysqlError() << endl;
 		return 0;
 	}
 
@@ -121,22 +122,28 @@ void CommandHandler::fileRouterConfigure()
 /* 用户登录 */
 void CommandHandler::userLogin()
 {
-    server_.Post("/api/login", [](const Request& req, Response& res) {
+    server_.Post("/api/login", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "login success";
 
         try {
+            int _ret;
             auto user = req_body.at("user");
             auto password = req_body.at("password");
             
-            /// TODO:此处需要数据库处理用户
-            // ...
-
-            /* 登录成功需要携带token返回 */
-            auto token = Anakin::Token::create();
-            token = "Bearer " + token;
-            res.set_header("Authorization", token);
+            // 数据库处理用户
+            if ((_ret = user_manager_->check(user, password))) {
+                cout << __LINE__ << user_manager_->error(_ret) << endl;
+                ret = -1;
+                msg = "user not exist.";
+            } else {
+                /* 登录成功需要携带token返回 */
+                // 创建token
+                auto token = Anakin::Token::create(user);
+                token = "Bearer " + token;
+                res.set_header("Authorization", token);
+            }
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -155,7 +162,7 @@ void CommandHandler::userLogin()
 /* 用户注册 */
 void CommandHandler::userSignup()
 {
-    server_.Post("/api/signup", [](const Request& req, Response& res) {
+    server_.Post("/api/signup", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "sign up success";
@@ -166,11 +173,18 @@ void CommandHandler::userSignup()
             auto confirm_password = req_body.at("confirmpassword");
             if (password != confirm_password) {
                 ret = -1;
-                msg = "前后密码不一致！";
+                msg = "password and confirm password not same";
             }
             else {
-                /// TODO:此处需要数据库处理用户
-                // ...
+                int _ret;
+                // 首先数据库中是否存在该用户
+                /// TODO: 需要检查用户是否存在
+                // 添加用户
+                if ((_ret = user_manager_->add(user, password))) {
+                    cout << __LINE__ << user_manager_->error(_ret) << endl;
+                    ret = -1;
+                    msg = "user has existed";
+                }
             }
         }
         catch (const json::exception& e) {
@@ -179,7 +193,6 @@ void CommandHandler::userSignup()
             msg = "data error!";
         }
 
-        
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
@@ -199,8 +212,7 @@ void CommandHandler::userLogout()
         try {
             auto user = req_body.at("user");
             
-            // TODO:此处需要cookie等操作
-            // ...
+            /// TODO:此处需要token过期操作(不过期似乎也可以)
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -225,8 +237,7 @@ void CommandHandler::userChangepass()
         std::string msg = "change password success";
 
         try {
-            verify_token(req);
-
+            auto _user = verify_token(req);
             auto user = req_body.at("user");
             auto old_password = req_body.at("oldpassword");
             auto new_password = req_body.at("newpassword");
@@ -235,12 +246,20 @@ void CommandHandler::userChangepass()
             if (new_password != confirm_password) {
                 ret = -1;
                 msg = "new password and confirm password are not same!";
+            } 
+            else if (_user != user) {
+                ret = -1;
+                msg = "invalid token";
             }
             else {
-                // TODO:此处需要数据库操作
-                // ...
+                int _ret;
+                // 数据库操作
+                if ((_ret = user_manager_->change(user, new_password))) {
+                    cout << __LINE__ << user_manager_->error(_ret) << endl;
+                    ret = -1;
+                    msg = "change password failure when database opeation";
+                }
             }
-            
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -261,7 +280,7 @@ void CommandHandler::userChangepass()
     });
 }
 
-void CommandHandler::verify_token(const httplib::Request& req) const 
+std::string CommandHandler::verify_token(const httplib::Request& req) const 
 {
     const auto token = req.get_header_value("Authorization");
 
@@ -271,7 +290,8 @@ void CommandHandler::verify_token(const httplib::Request& req) const
     }
 
     try {
-        Anakin::Token::verify(token.substr(7));
+        auto user = Anakin::Token::verify(token.substr(7));
+        return user;
     } catch (const std::exception& e) {
         cout << e.what() << endl;
         throw Anakin::token_exception();

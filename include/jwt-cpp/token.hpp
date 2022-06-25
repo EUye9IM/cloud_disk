@@ -8,6 +8,7 @@
 
 #include "traits.h"
 #include <exception>
+#include <string>
 
 namespace Anakin {
 class token_exception : public std::exception
@@ -23,9 +24,9 @@ class Token
 {
 public:
     Token() = default;
-    static const std::string create(const int expire_time=15);
-    /* 认证函数，如果出错抛出异常 */
-    static void verify(const std::string token);
+    static const std::string create(const std::string user, const int expire_time=15);
+    /* 认证函数，如果出错抛出异常，正常返回用户账号 */
+    static std::string verify(const std::string token);
 
 private:
     using min = std::chrono::minutes;
@@ -34,7 +35,7 @@ private:
 
 };
 
-inline const std::string Token::create(const int expire_time)
+inline const std::string Token::create(const std::string user, const int expire_time)
 {
     const auto time = jwt::date::clock::now();
 	const auto token = jwt::create<traits>()
@@ -44,20 +45,24 @@ inline const std::string Token::create(const int expire_time)
 						   .set_issued_at(time)
 						   .set_not_before(time)
 						   .set_expires_at(time + min{expire_time})
+                           .set_payload_claim("user", user)
 						   .sign(jwt::algorithm::hs256{"secret"});
 
     return token;
 }
 
-inline void Token::verify(const std::string token) 
+inline std::string Token::verify(const std::string token) 
 {
         const auto decoded = jwt::decode<traits>(token);
+        const std::string user = traits::as_string(decoded.get_payload_claim("user").to_json());
 
         jwt::verify<traits>()
             .allow_algorithm(jwt::algorithm::hs256{"secret"})
             .with_issuer("cloud-disk")
             .with_audience("cloud-disk.com")
             .verify(decoded);
+        
+        return user;
 }
 
 }// end namespace Anakin
