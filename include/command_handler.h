@@ -9,12 +9,15 @@
 // #define __ANAKIN_DEBUG__
 
 #include <string>
+#include <memory>
 #include "httplib.h"
 #include "jwt-cpp/token.hpp"
+#include "user_info_manager.h"
 
 #ifdef __ANAKIN_DEBUG__
 void CommandHandlerDebug();
 #endif
+
 
 class CommandHandler {
 public:
@@ -41,7 +44,8 @@ protected:
     void fileCopy();
     void fileMove();
 
-    
+    /* 初始化 UserInfoManager */
+    int initUserManager();
 
 private:
     /* 验证response的token，抛出token_exception异常 */
@@ -49,6 +53,9 @@ private:
 
     /* http server */
     httplib::Server server_;
+
+    /* user 数据库 */
+    std::unique_ptr<UserInfoManager> user_manager_;
 
 };
 

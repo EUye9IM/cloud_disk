@@ -1,4 +1,4 @@
-CXX			= g++
+CXX			= g++ 
 CXX_FLAGS	= -Wall -Werror -O2 -std=c++11
 
 INCLUDE		= ../../include
@@ -45,7 +45,7 @@ $(EXECUTABLE):$(OBJS)
 
 %.o: %.cpp 
 	@echo Compiling $@
-	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c $< -o $@
+	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c $< -o $@
 
 
 clean:

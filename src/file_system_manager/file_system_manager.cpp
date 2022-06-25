@@ -1,3 +1,4 @@
+#if 0
 #include <file_system_manager.h>
 
 #include <mysql/mysql.h>
@@ -73,3 +74,4 @@ const char *FileSystemManager::error(int error_no) {
 	}
 	return "unknown error";
 }
+#endif

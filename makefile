@@ -1,5 +1,5 @@
 CXX			= g++
-CXX_FLAGS	= -Wall -Werror -O2 -std=c++11
+CXX_FLAGS	= -Wall -Werror -O2 -std=c++14
 EXTRA_NAME	= cpp
 
 SRC			= src

@@ -7,15 +7,20 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <memory>
+#include <mutex>
 #include <string>
 
 #include "httplib.h"
 #include "json.hpp"
 #include "jwt-cpp/token.hpp"
+#include "logc/logc.h"
+#include "user_info_manager.h"
 
 using json = nlohmann::json;
 using namespace httplib;
 using namespace std;
+
 
 /* 调试函数 */
 #ifdef __ANAKIN_DEBUG__
@@ -25,8 +30,26 @@ void CommandHandlerDebug()
 }
 #endif
 
+static SqlConfig sql_config = {
+    .host = "127.0.0.1",
+    .port = 3306,
+    .user = "root",
+    .pass = "root123",
+    .database_name = "disk",
+    .charset = "UTF-8",
+};
+
 CommandHandler::CommandHandler(const std::string ip_address, const int port)
+    : user_manager_(std::make_unique<UserInfoManager>())
 {
+    // 初始并创建数据库
+    /// \TODO: 数据库连接不成功
+    // if (!initUserManager()) {
+    //     LogC::log_println("userinfomanager init failure.");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // 将会进入线程阻塞中
     if (initServer(ip_address, port) < 0) {
         exit(EXIT_FAILURE);
     }
@@ -49,6 +72,30 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     }
 
     return 0;
+}
+
+/* 启动并初始化sql服务器 */
+int CommandHandler::initUserManager()
+{
+    // user_manager_ = std::make_unique<UserInfoManager>();
+
+    int ret;
+	if ((ret = user_manager_->connect(sql_config))) {
+		cout << user_manager_->error(ret) << endl;
+		if (ret == _UserInfoManager::_RET_SQL_ERR)
+			cout << user_manager_->getMysqlError() << endl;
+		return 0;
+	}
+
+	if ((ret = user_manager_->initDatabase())) {
+		cout << user_manager_->error(ret) << endl;
+		if (ret == _UserInfoManager::_RET_SQL_ERR)
+			cout << user_manager_->getMysqlError() << endl;
+		return 0;
+	}
+
+    // 初始化成功
+    return 1;
 }
 
 /* 用户相关路由 */
@@ -83,7 +130,7 @@ void CommandHandler::userLogin()
             auto user = req_body.at("user");
             auto password = req_body.at("password");
             
-            // TODO:此处需要数据库处理用户
+            /// TODO:此处需要数据库处理用户
             // ...
 
             /* 登录成功需要携带token返回 */
@@ -122,7 +169,7 @@ void CommandHandler::userSignup()
                 msg = "前后密码不一致！";
             }
             else {
-                // TODO:此处需要数据库处理用户
+                /// TODO:此处需要数据库处理用户
                 // ...
             }
         }
