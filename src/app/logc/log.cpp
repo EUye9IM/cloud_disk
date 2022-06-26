@@ -14,7 +14,8 @@ const int OK = 0;
 const int ER = -1;
 
 static const int _FALG_DEFAULT =
-	LOG_FLAG_DATE | LOG_FLAG_TIME | LOG_FLAG_NORMAL | LOG_FLAG_FATAL;
+	LOG_FLAG_DATE | LOG_FLAG_TIME | LOG_FLAG_NORMAL 
+	| LOG_FLAG_FATAL | LOG_FLAG_STDOUT;
 
 static void _log_head();
 
@@ -47,6 +48,10 @@ int log_printf(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(_file, fmt, ap);
+	if (_flag & LOG_FLAG_STDOUT) {
+		vfprintf(stdout, fmt, ap);
+		fflush(stdout);
+	}
 	va_end(ap);
 	fflush(_file);
 	return OK;
@@ -58,6 +63,10 @@ int log_println(const char *str) {
 		return OK;
 	_log_head();
 	fprintf(_file, "%s\n", str);
+	if (_flag & LOG_FLAG_STDOUT) {
+		fprintf(stdout, "%s\n", str);
+		fflush(stdout);
+	}
 	fflush(_file);
 	return OK;
 }
@@ -113,10 +122,18 @@ static void _log_head() {
 	if (_flag & LOG_FLAG_DATE) {
 		fprintf(_file, "%04d/%02d/%02d ", c_tm->tm_year + 1900,
 				c_tm->tm_mon + 1, c_tm->tm_mday);
+		if (_flag & LOG_FLAG_STDOUT) {
+			fprintf(stdout, "%04d/%02d/%02d ", c_tm->tm_year + 1900,
+				c_tm->tm_mon + 1, c_tm->tm_mday);
+		}
 	}
 	if (_flag & LOG_FLAG_TIME) {
 		fprintf(_file, "%02d:%02d:%02d ", c_tm->tm_hour, c_tm->tm_min,
 				c_tm->tm_sec);
+		if (_flag & LOG_FLAG_STDOUT) {
+			fprintf(stdout, "%02d:%02d:%02d ", c_tm->tm_hour, c_tm->tm_min,
+				c_tm->tm_sec);
+		}
 	}
 }
 } // namespace LogC

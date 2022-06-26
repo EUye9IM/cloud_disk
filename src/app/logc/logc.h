@@ -9,6 +9,8 @@ const int LOG_FLAG_TIME = 1 << 2;
 const int LOG_FLAG_NORMAL = 1 << 3;
 const int LOG_FLAG_DEBUG = 1 << 4;
 const int LOG_FLAG_FATAL = 1 << 5;
+// 补充flag:写入文件的同时写入标准输出
+const int LOG_FLAG_STDOUT = 1 << 6;
 
 int log_open(const char *file_path);
 int log_open(FILE *file);
