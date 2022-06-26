@@ -4,6 +4,8 @@
 
 using namespace _UserInfoManager;
 
+const int PASS_LEN = 60;
+
 static const char *_SQL_INIT_DATABASE = "\
 DROP TABLE IF EXISTS userinfo;\
 CREATE TABLE userinfo(\
@@ -90,59 +92,65 @@ int UserInfoManager::check(const std::string &user, const std::string &pass) {
 	static MYSQL_STMT *stmt = nullptr;
 	stmt = mysql_stmt_init(sql);
 	static MYSQL_BIND bind[2];
-	static MYSQL_BIND res;
-	static int num;
+	static MYSQL_BIND res[2];
+	static char pass_hash[PASS_LEN], new_pass_hash[PASS_LEN];
 	if (mysql_stmt_prepare(
-			stmt,
-			"SELECT count(*) FROM userinfo WHERE name = ? AND pass = SHA1(?)",
-			-1)) {
+			stmt, "SELECT pass, SHA1(?) FROM userinfo WHERE name = ?", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
 	memset(bind, 0, sizeof(bind));
-	memset(&res, 0, sizeof(res));
+	memset(res, 0, sizeof(res));
+	memset(pass_hash, 0, sizeof(pass_hash));
+	memset(new_pass_hash, 0, sizeof(new_pass_hash));
 
 	bind[0].buffer_type = MYSQL_TYPE_STRING;
-	bind[0].buffer = (void *)user.c_str();
-	bind[0].buffer_length = user.length();
-
+	bind[0].buffer = (void *)pass.c_str();
+	bind[0].buffer_length = pass.length();
 	bind[1].buffer_type = MYSQL_TYPE_STRING;
-	bind[1].buffer = (void *)pass.c_str();
-	bind[1].buffer_length = pass.length();
+	bind[1].buffer = (void *)user.c_str();
+	bind[1].buffer_length = user.length();
 
-	res.buffer_type = MYSQL_TYPE_LONG;
-	res.buffer = (void *)&num;
+	res[0].buffer_type = MYSQL_TYPE_STRING;
+	res[0].buffer = (void *)pass_hash;
+	res[0].buffer_length = sizeof(pass_hash);
+
+	res[1].buffer_type = MYSQL_TYPE_STRING;
+	res[1].buffer = (void *)new_pass_hash;
+	res[1].buffer_length = sizeof(new_pass_hash);
 
 	if (mysql_stmt_bind_param(stmt, bind)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	if (mysql_stmt_bind_result(stmt, &res)) {
+	if (mysql_stmt_bind_result(stmt, res)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
 
 	if (mysql_stmt_execute(stmt)) {
-		if (mysql_stmt_errno(stmt) == 1062) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	if (mysql_stmt_fetch(stmt)) {
+		if (!mysql_stmt_errno(stmt)) {
 			mysql_stmt_close(stmt);
-			return _RET_USER_EXIST;
+			return _RET_CHECK_FAILED_USER;
 		}
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	if (mysql_stmt_fetch(stmt)) {
-		_mysql_error_msg = mysql_stmt_error(stmt);
-		mysql_stmt_close(stmt);
-		return _RET_SQL_ERR;
-	}
 	mysql_stmt_close(stmt);
-	if (num == 1)
+
+	if (!strcmp(pass_hash, new_pass_hash))
 		return _RET_OK;
-	return _RET_CHECK_FAILED;
+	return _RET_CHECK_FAILED_PASS;
 }
 int UserInfoManager::change(const std::string &user, const std::string &pass) {
 	std::lock_guard<std::mutex> lock(_lock);
@@ -245,8 +253,10 @@ const char *UserInfoManager::error(int error_no) {
 		return "mysql query failed";
 	case _RET_USER_EXIST:
 		return "user exist";
-	case _RET_CHECK_FAILED:
-		return "username or password incorrect";
+	case _RET_CHECK_FAILED_PASS:
+		return "password incorrect";
+	case _RET_CHECK_FAILED_USER:
+		return "user does not exist";
 
 	default:
 		return "unknown error";

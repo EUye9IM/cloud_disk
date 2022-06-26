@@ -19,8 +19,8 @@ int main(int argc, char *argv[]) {
 
 	if (int ret = um.connect(sql_config)) {
 		cout << um.error(ret) << endl;
-		if (ret == _UserInfoManager::_RET_SQL_ERR)
-			cout << um.getMysqlError() << endl;
+		//	if (ret == _UserInfoManager::_RET_SQL_ERR)
+		cout << um.getMysqlError() << endl;
 		return 0;
 	}
 	if (int ret = um.initDatabase()) {
@@ -30,39 +30,35 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	if (int ret = um.add("A", "123456")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.add("B", "654321")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
+	int ret = 0;
+	ret = um.add("A", "123456");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.add("B", "654321");
+	cout << __LINE__ << um.error(ret) << endl;
 
-	if (int ret = um.check("A", "123456")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.check("B", "654321")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.check("A", "000000")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
+	ret = um.check("A", "123456");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.check("B", "654321");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.check("A", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.check("C", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
 
-	if (int ret = um.change("A", "000000")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.check("A", "000000")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.change("C", "000000")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
+	ret = um.change("A", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.check("A", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.change("C", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.check("C", "000000");
+	cout << __LINE__ << um.error(ret) << endl;
+	ret = um.del("B");
+	cout << __LINE__ << um.error(ret) << endl;
 
-	if (int ret = um.del("B")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
-	if (int ret = um.check("B", "654321")) {
-		cout << __LINE__ << um.error(ret) << endl;
-	}
+	ret = um.check("B", "654321");
+	cout << __LINE__ << um.error(ret) << endl;
+
 	return 0;
 }
 #endif

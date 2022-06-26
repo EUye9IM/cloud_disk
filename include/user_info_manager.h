@@ -34,7 +34,8 @@ const int _RET_NO_CONN = -2;
 const int _RET_CONN = -3;
 const int _RET_SQL_ERR = -4;
 const int _RET_USER_EXIST = -5;
-const int _RET_CHECK_FAILED = -6;
+const int _RET_CHECK_FAILED_PASS = -6; // password incorrect
+const int _RET_CHECK_FAILED_USER = -7; // user does not exist
 } // namespace _UserInfoManager
 
 #endif

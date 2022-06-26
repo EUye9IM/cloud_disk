@@ -284,30 +284,30 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 
 int FileSystemManager::list(const std::string &folder_path,
 							std::vector<FNode> &fnode_list) {
-	std::lock_guard<std::mutex> lock(_lock);
-	static std::string recent_path;
-	static std::string regex_parm;
-	static MYSQL_STMT *stmt = nullptr;
-	static MYSQL_BIND in;
-	static MYSQL_BIND out;
-	fnode_list.clear();
-	if (folder_path[0] != '/')
-		return _RET_BAD_PATH;
-	if (folder_path.back() != '/')
-		recent_path = folder_path + "/";
-	else
-		recent_path = folder_path;
-	regex_parm = "^" + recent_path + "[^/]/$";
-	// find father
-	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt,
-						   "SELECT path, hash FROM node WHERE path REGEX "
-						   "'^?[^/]/$' AND hash is NULL;",
-						   -1)) {
-		_mysql_error_msg = mysql_stmt_error(stmt);
-		mysql_stmt_close(stmt);
-		return _RET_SQL_ERR;
-	}
+	// std::lock_guard<std::mutex> lock(_lock);
+	// static std::string recent_path;
+	// static std::string regex_parm;
+	// static MYSQL_STMT *stmt = nullptr;
+	// static MYSQL_BIND in;
+	// static MYSQL_BIND out;
+	// fnode_list.clear();
+	// if (folder_path[0] != '/')
+	// 	return _RET_BAD_PATH;
+	// if (folder_path.back() != '/')
+	// 	recent_path = folder_path + "/";
+	// else
+	// 	recent_path = folder_path;
+	// regex_parm = "^" + recent_path + "[^/]/$";
+	// // find father
+	// stmt = mysql_stmt_init(sql);
+	// if (mysql_stmt_prepare(stmt,
+	// 					   "SELECT path, hash FROM node WHERE path REGEX "
+	// 					   "'^?[^/]/$' AND hash is NULL;",
+	// 					   -1)) {
+	// 	_mysql_error_msg = mysql_stmt_error(stmt);
+	// 	mysql_stmt_close(stmt);
+	// 	return _RET_SQL_ERR;
+	// }
 
 	return _RET_OK;
 }
