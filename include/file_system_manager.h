@@ -14,11 +14,12 @@ struct FNode {
 
 class FileSystemManager {
 public:
-	FileSystemManager();
+	explicit FileSystemManager();
 	~FileSystemManager();
 	int connect(const SqlConfig &sql_config);
 
-	int makeFile(const std::string &file_path, const std::string &file_hash);
+	int makeFile(const std::string &file_path, const std::string &file_hash,
+				 const long long file_size);
 	int makeFolder(const std::string &folder_path);
 	int list(const std::string &folder_path, std::vector<FNode> &fnode_list);
 	int move(const std::string &old_path, const std::string &new_path);

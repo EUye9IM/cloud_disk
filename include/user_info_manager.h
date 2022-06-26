@@ -8,7 +8,7 @@
 
 class UserInfoManager {
 public:
-	UserInfoManager();
+	explicit UserInfoManager();
 	~UserInfoManager();
 	int connect(const SqlConfig &sql_config);
 
