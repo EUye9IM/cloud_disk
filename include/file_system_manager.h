@@ -10,6 +10,8 @@
 struct FNode {
 	std::string name;
 	bool is_file;
+	std::string file_hash;
+	long long file_size;
 };
 
 class FileSystemManager {

@@ -22,10 +22,14 @@
 struct FNode {
 	std::string name;
 	bool is_file;
+	std::string file_hash;
+	long long file_size;
 };
 ```
 
 name 为文件（夹）名字，is_file 为 true 时该节点为文件。
+
+当该节点是文件时，file_hash 为文件哈希值；file_size为文件大小（字节）。
 
 ## 头文件
 
@@ -40,6 +44,8 @@ name 为文件（夹）名字，is_file 为 true 时该节点为文件。
 #### 新建文件
 
 `int makeFile(const std::string &file_path, const std::string &file_hash);`
+
+不检查文件尺寸是否正确，仅用作记录。如果相同文件已存在则 file_size 字段无作用。
 
 #### 新建文件夹
 

@@ -17,47 +17,21 @@ int main(int argc, char *argv[]) {
 
 	FileSystemManager fs;
 
-	if (int ret = fs.connect(sql_config)) {
-		cout << fs.error(ret) << endl;
-		return 0;
-	}
-	if (int ret = fs.initDatabase()) {
-		cout << fs.error(ret) << endl;
-		if (ret == _FileSystemManager::_RET_SQL_ERR)
-			cout << fs.getMysqlError() << endl;
-		return 0;
-	}
-	// FIXME debug code
-	printf("%s:%d\n", __FILE__, __LINE__);
-	if (int ret = fs.makeFile("/123", "123")) {
-		cout << fs.error(ret) << endl;
-		if (ret == _FileSystemManager::_RET_SQL_ERR)
-			cout << fs.getMysqlError() << endl;
-		return 0;
-	} 
-	// FIXME debug code
-	printf("%s:%d\n", __FILE__, __LINE__);
-	if (int ret = fs.makeFolder("/123")) {
-		cout << fs.error(ret) << endl;
-		if (ret == _FileSystemManager::_RET_SQL_ERR)
-			cout << fs.getMysqlError() << endl;
-	}
-	// FIXME debug code
-	printf("%s:%d\n", __FILE__, __LINE__);
-	if (int ret = fs.makeFolder("/1234")) {
-		cout << fs.error(ret) << endl;
-		if (ret == _FileSystemManager::_RET_SQL_ERR)
-			cout << fs.getMysqlError() << endl;
-		return 0;
-	}
-	// FIXME debug code
-	printf("%s:%d\n", __FILE__, __LINE__);
-	if (int ret = fs.makeFile("/1234/123", "123")) {
-		cout << fs.error(ret) << endl;
-		if (ret == _FileSystemManager::_RET_SQL_ERR)
-			cout << fs.getMysqlError() << endl;
-		return 0;
-	}
+	int ret;
+	ret = fs.connect(sql_config);
+	cout << __LINE__<< fs.error(ret) << endl;
+
+	ret = fs.initDatabase();
+	cout << __LINE__ << fs.error(ret) << endl;
+
+	ret = fs.makeFolder("/123");
+	cout << __LINE__ << fs.error(ret) << endl;
+
+	ret = fs.makeFile("/123/234", "123", 213);
+	cout << __LINE__ << fs.error(ret) << endl;
+	ret = fs.makeFile("/123/244", "123", 2113);
+	cout << __LINE__ << fs.error(ret) << endl;
+
 	return 0;
 }
 #endif

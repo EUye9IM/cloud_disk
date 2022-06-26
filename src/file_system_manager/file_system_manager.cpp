@@ -12,6 +12,11 @@ path char(255) NOT NULL,\
 hash char(50),\
 PRIMARY KEY (path));\
 INSERT INTO node VALUES ('/',NULL);\
+DROP TABLE IF EXISTS file;\
+CREATE TABLE file(\
+hash char(50),\
+size bigint(22) NOT NULL,\
+PRIMARY KEY (hash));\
 ";
 
 class TransactionGuard {
@@ -77,7 +82,8 @@ int FileSystemManager::connect(const SqlConfig &sql_config) {
 	return _RET_OK;
 }
 int FileSystemManager::makeFile(const std::string &file_path,
-								const std::string &file_hash) {
+								const std::string &file_hash,
+								const long long file_size) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string parent_path, recent_path;
 	static MYSQL_STMT *stmt = nullptr;
@@ -174,10 +180,37 @@ int FileSystemManager::makeFile(const std::string &file_path,
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	mysql_stmt_close(stmt);
-	if (num != 1)
-		return _RET_BAD_PATH;
+	// file size
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "INSERT INTO file VALUES(?,?);", -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)file_hash.c_str();
+	in[0].buffer_length = file_hash.length();
+	in[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	in[1].buffer = (void *)&file_size;
 
+	if (mysql_stmt_bind_param(stmt, in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		if (mysql_stmt_errno(stmt) == 1062) {
+			mysql_stmt_close(stmt);
+			transaction.status = transaction.commit;
+			return _RET_OK;
+		}
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	mysql_stmt_close(stmt);
 	transaction.status = transaction.commit;
 	return _RET_OK;
 }
@@ -302,7 +335,7 @@ int FileSystemManager::list(const std::string &folder_path,
 	// stmt = mysql_stmt_init(sql);
 	// if (mysql_stmt_prepare(stmt,
 	// 					   "SELECT path, hash FROM node WHERE path REGEX "
-	// 					   "'^?[^/]/$' AND hash is NULL;",
+	// 					   "'^?[^/]+/$' AND hash is NULL;",
 	// 					   -1)) {
 	// 	_mysql_error_msg = mysql_stmt_error(stmt);
 	// 	mysql_stmt_close(stmt);
@@ -349,4 +382,3 @@ const char *FileSystemManager::error(int error_no) {
 	}
 	return "unknown error";
 }
-#endif
