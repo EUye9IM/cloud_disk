@@ -345,8 +345,12 @@ void CommandHandler::fileList()
                         file["size"] = f.file_size;
                     }
 
-                    /// TODO: 时间目前无效，需要修改
-                    file["time"] = "May 2033";
+                    // 设置时间
+                    char buf[32]{};
+                    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", 
+                        localtime(&(f.modufy_time)));
+
+                    file["time"] = std::string(buf);
                     files.push_back(file);
                 }
             } else {
