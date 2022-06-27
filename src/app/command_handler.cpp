@@ -63,6 +63,8 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     userRouterConfigure();
     /* 文件路由 */
     fileRouterConfigure();
+    /* 测试路由 */
+    routeTest();
 
     if (server_.listen(ip_address.c_str(), port) == false) {
         cout << "listen " << ip_address << ":" << port << " failure!\n";
@@ -630,6 +632,23 @@ void CommandHandler::fileDownload()
 
         // 设置Content-Range
         res.set_header("Content-Range", content_range);
+        
     });
 
+}
+
+void CommandHandler::routeTest()
+{
+    server_.Get("/chunked", [&](const Request& req, Response& res) {
+    res.set_chunked_content_provider(
+        "text/plain",
+        [](size_t offset, DataSink &sink) {
+        sink.write("123", 3);
+        sink.write("345", 3);
+        sink.write("789", 3);
+        sink.done(); // No more data
+        return true; // return 'false' if you want to cancel the process.
+        }
+    );
+    });
 }

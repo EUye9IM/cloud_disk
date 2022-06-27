@@ -45,6 +45,8 @@ protected:
     void fileMove();
     void fileDownload();
 
+    void routeTest();
+
     /* 初始化 UserInfoManager */
     int initUserManager();
 
