@@ -5,10 +5,13 @@
 
 using namespace _FileSystemManager;
 
+const int PATH_LEN = 520;
+const int HASH_LEN = 60;
+
 static const char *_SQL_INIT_DATABASE = "\
 DROP TABLE IF EXISTS node;\
 CREATE TABLE node(\
-path char(255) NOT NULL,\
+path VARCHAR(512) NOT NULL,\
 hash char(50),\
 PRIMARY KEY (path));\
 INSERT INTO node VALUES ('/',NULL);\
@@ -317,30 +320,84 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 
 int FileSystemManager::list(const std::string &folder_path,
 							std::vector<FNode> &fnode_list) {
-	// std::lock_guard<std::mutex> lock(_lock);
-	// static std::string recent_path;
-	// static std::string regex_parm;
-	// static MYSQL_STMT *stmt = nullptr;
-	// static MYSQL_BIND in;
-	// static MYSQL_BIND out;
-	// fnode_list.clear();
-	// if (folder_path[0] != '/')
-	// 	return _RET_BAD_PATH;
-	// if (folder_path.back() != '/')
-	// 	recent_path = folder_path + "/";
-	// else
-	// 	recent_path = folder_path;
-	// regex_parm = "^" + recent_path + "[^/]/$";
-	// // find father
-	// stmt = mysql_stmt_init(sql);
-	// if (mysql_stmt_prepare(stmt,
-	// 					   "SELECT path, hash FROM node WHERE path REGEX "
-	// 					   "'^?[^/]+/$' AND hash is NULL;",
-	// 					   -1)) {
-	// 	_mysql_error_msg = mysql_stmt_error(stmt);
-	// 	mysql_stmt_close(stmt);
-	// 	return _RET_SQL_ERR;
-	// }
+	std::lock_guard<std::mutex> lock(_lock);
+	static std::string recent_path;
+	static std::string regex_parm;
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in;
+	static MYSQL_BIND out[3];
+	static FNode buf_node;
+
+	static char buffer_path[PATH_LEN];
+	static char buffer_hash[HASH_LEN];
+	static long long buffer_size;
+
+	if (folder_path.length() < 1 || folder_path[0] != '/')
+		return _RET_BAD_PATH;
+	if (folder_path.back() != '/')
+		recent_path = folder_path + "/";
+	else
+		recent_path = folder_path;
+	regex_parm = "^" + recent_path + "[^/]+/$";
+	fnode_list.clear();
+
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(
+			stmt,
+			"SELECT path, node.hash, size FROM node LEFT JOIN file "
+			"ON node.hash = file.hash WHERE path REGEXP "
+			"? ORDER BY path",
+			-1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)regex_parm.c_str();
+	in.buffer_length = regex_parm.length();
+
+	memset(out, 0, sizeof(out));
+	out[0].buffer_type = MYSQL_TYPE_STRING;
+	out[0].buffer = (void *)&buffer_path;
+	out[0].buffer_length = sizeof(buffer_path);
+	out[1].buffer_type = MYSQL_TYPE_STRING;
+	out[1].buffer = (void *)&buffer_hash;
+	out[1].buffer_length = sizeof(buffer_hash);
+	out[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	out[2].buffer = (void *)&buffer_size;
+	out[2].buffer_length = sizeof(buffer_size);
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	while (!mysql_stmt_fetch(stmt)) {
+		static size_t pos1,pos2;
+		buf_node.name = buffer_path;
+		buf_node.is_file = (buffer_hash[0] != 0);
+		buf_node.file_hash = buffer_hash;
+		buf_node.file_size = buffer_size;
+
+		pos1 = buf_node.name.find_last_of('/');
+		pos2 = buf_node.name.find_last_of('/', pos1 - 1);
+		buf_node.name = buf_node.name.substr(pos2+1, pos1-pos2-1);
+
+		fnode_list.push_back(buf_node);
+	}
+	mysql_stmt_close(stmt);
 
 	return _RET_OK;
 }

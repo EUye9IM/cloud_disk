@@ -45,7 +45,7 @@ $(EXECUTABLE):$(OBJS)
 
 %.o: %.cpp 
 	@echo Compiling $@
-	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c $< -o $@
+	@$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c $< -o $@
 
 
 clean:
