@@ -43,6 +43,7 @@ protected:
     void fileDelete();
     void fileCopy();
     void fileMove();
+    void fileDownload();
 
     /* 初始化 UserInfoManager */
     int initUserManager();

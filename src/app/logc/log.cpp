@@ -14,7 +14,8 @@ const int OK = 0;
 const int ER = -1;
 
 static const int _FALG_DEFAULT =
-	LOG_FLAG_DATE | LOG_FLAG_TIME | LOG_FLAG_NORMAL | LOG_FLAG_FATAL;
+	LOG_FLAG_DATE | LOG_FLAG_TIME | LOG_FLAG_NORMAL 
+	| LOG_FLAG_FATAL | LOG_FLAG_STDOUT;
 
 static void _log_head();
 
@@ -49,6 +50,13 @@ int log_printf(const char *fmt, ...) {
 	vfprintf(_file, fmt, ap);
 	va_end(ap);
 	fflush(_file);
+	if (_flag & LOG_FLAG_STDOUT) {
+		va_start(ap, fmt);
+		vprintf(fmt, ap);
+		va_end(ap);
+		fflush(stdout);
+	}
+
 	return OK;
 }
 int log_println(const char *str) {
@@ -59,6 +67,11 @@ int log_println(const char *str) {
 	_log_head();
 	fprintf(_file, "%s\n", str);
 	fflush(_file);
+	// 补充输出到 stdout
+	if (_flag & LOG_FLAG_STDOUT) {
+		printf("%s\n", str);
+		fflush(stdout);
+	}
 	return OK;
 }
 int log_debug(const char *fmt, ...) {
@@ -87,6 +100,13 @@ int log_fatal(const char *fmt, ...) {
 	vfprintf(_file, fmt, ap);
 	va_end(ap);
 	fflush(_file);
+	// 输出到 stdout
+	if (_flag & LOG_FLAG_STDOUT) {
+		va_start(ap, fmt);
+		vprintf(fmt, ap);
+		va_end(ap);
+		fflush(stdout);
+	}
 	exit(0);
 	return OK;
 }
@@ -113,10 +133,18 @@ static void _log_head() {
 	if (_flag & LOG_FLAG_DATE) {
 		fprintf(_file, "%04d/%02d/%02d ", c_tm->tm_year + 1900,
 				c_tm->tm_mon + 1, c_tm->tm_mday);
+		if (_flag & LOG_FLAG_STDOUT) {
+			printf("%04d/%02d/%02d ", c_tm->tm_year + 1900,
+				c_tm->tm_mon + 1, c_tm->tm_mday);
+		}
 	}
 	if (_flag & LOG_FLAG_TIME) {
 		fprintf(_file, "%02d:%02d:%02d ", c_tm->tm_hour, c_tm->tm_min,
 				c_tm->tm_sec);
+		if (_flag & LOG_FLAG_STDOUT) {
+			printf("%02d:%02d:%02d ", c_tm->tm_hour, c_tm->tm_min,
+				c_tm->tm_sec);
+		}
 	}
 }
 } // namespace LogC

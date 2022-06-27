@@ -189,3 +189,19 @@ return
 - 文件上传和下载为核心模块
 
 ### 文件下载
+
+```
+post /api/download
+send
+{
+    "method": "download",
+    "path": <path/to/file>,    
+    "offset": <offset in byte> // 从第几字节开始
+}
+return 
+{
+    通过http的相应首部的 Content-Type/Content-Range/Content-Length三个字段回复，body中放置裸二进制数据
+}
+
+问题：如果下载文件时服务端文件发生变化，此时已下载内容受损，所以考虑添加Last-Modified字段
+```

@@ -3,10 +3,14 @@
  **/
 
 #include "command_handler.h"
+#include <bits/types/FILE.h>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -117,6 +121,7 @@ void CommandHandler::fileRouterConfigure()
     fileDelete();
     fileCopy();
     fileMove();
+    fileDownload();
 }
 
 /* 用户登录 */
@@ -134,9 +139,9 @@ void CommandHandler::userLogin()
             
             // 数据库处理用户
             if ((_ret = user_manager_->check(user, password))) {
-                cout << __LINE__ << user_manager_->error(_ret) << endl;
+                // 获取错误信息
+                msg = user_manager_->error(_ret);
                 ret = -1;
-                msg = "user not exist.";
             } else {
                 /* 登录成功需要携带token返回 */
                 // 创建token
@@ -156,6 +161,10 @@ void CommandHandler::userLogin()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+
+        // 日志记录登录信息
+        LogC::log_printf("%s login: %s\n", 
+                        req.remote_addr.c_str(), msg.c_str());
     });
 }
 
@@ -177,13 +186,10 @@ void CommandHandler::userSignup()
             }
             else {
                 int _ret;
-                // 首先数据库中是否存在该用户
-                /// TODO: 需要检查用户是否存在
-                // 添加用户
+                /// TODO: 需要判断用户是否存在，不存在添加用户
                 if ((_ret = user_manager_->add(user, password))) {
-                    cout << __LINE__ << user_manager_->error(_ret) << endl;
+                    msg = user_manager_->error(_ret); 
                     ret = -1;
-                    msg = "user has existed";
                 }
             }
         }
@@ -198,6 +204,9 @@ void CommandHandler::userSignup()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        // 日志记录注册信息
+        LogC::log_printf("%s signup: %s\n", 
+                        req.remote_addr.c_str(), msg.c_str());
     });
 }
 
@@ -225,6 +234,9 @@ void CommandHandler::userLogout()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        // 日志记录登出信息
+        LogC::log_printf("%s logout: %s\n", 
+                        req.remote_addr.c_str(), msg.c_str());
     });
 }
 
@@ -255,9 +267,8 @@ void CommandHandler::userChangepass()
                 int _ret;
                 // 数据库操作
                 if ((_ret = user_manager_->change(user, new_password))) {
-                    cout << __LINE__ << user_manager_->error(_ret) << endl;
+                    msg = user_manager_->error(_ret);
                     ret = -1;
-                    msg = "change password failure when database opeation";
                 }
             }
         }
@@ -277,6 +288,9 @@ void CommandHandler::userChangepass()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        // 日志记录登录信息
+        LogC::log_printf("%s changepass: %s\n", 
+                        req.remote_addr.c_str(), msg.c_str());
     });
 }
 
@@ -528,6 +542,69 @@ void CommandHandler::fileMove()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+/**
+ * 生成 http Content-Range 字段
+ * -1 表示未知
+ **/
+static std::string make_content_range(
+    const size_t start=-1, const size_t end=-1, const size_t size=-1, 
+    const std::string unit="bytes"
+) {
+    std::string field = unit + ' ';
+    if (start == -1 || end == -1) {
+        field += "*";
+    } else {
+        field += std::to_string(start) + '-' + std::to_string(end);
+    }
+
+    if (size == -1) {
+        field += "/*";
+    } else {
+        field += '/' + std::to_string(size);
+    }
+
+    return field;
+}
+
+// 文件下载
+void CommandHandler::fileDownload()
+{
+    server_.Post("/api/download", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        // 创建一个未知大小Content-Range
+        auto content_range = make_content_range();
+        
+        try {
+            // verify_token(req);
+            // 获取下载文件等信息
+            auto method = req_body.at("method");
+            auto path = req_body.at("path");
+            auto offset = req_body.at("offset");
+
+            /// TODO: 取出用户 path offset 的文件信息
+            auto size = 100;
+            std::string res_body = "filebody";
+            auto length = res_body.length();
+
+            
+            // 设置 type/range/length 字段
+            content_range = make_content_range(offset, length, size);
+            // 放置 body 数据内容
+            res.set_content(res_body, "application/octet-stream");
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+        }
+
+        // 设置Content-Range
+        res.set_header("Content-Range", content_range);
     });
 
 }
