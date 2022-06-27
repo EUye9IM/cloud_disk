@@ -99,7 +99,7 @@ return
         {
             name: 名称
             type: folder/file
-            size: 大小(byte)
+            size: 大小(byte)    // 文件夹该参数无效，为0
             time: 上次修改时间
         },
         ....
@@ -191,6 +191,8 @@ return
 ### 文件下载
 
 ```
+考虑到用户同时登录多个平台的可能，服务端只是按照客户端的要求发送数据
+
 post /api/download
 send
 {

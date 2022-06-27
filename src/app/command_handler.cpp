@@ -15,11 +15,15 @@
 #include <mutex>
 #include <string>
 
+#include "file_system_manager.h"
 #include "httplib.h"
 #include "json.hpp"
 #include "jwt-cpp/token.hpp"
 #include "logc/logc.h"
 #include "user_info_manager.h"
+#include "utility.hpp"
+#include <bits/types/time_t.h>
+#include <time.h>
 
 using json = nlohmann::json;
 using namespace httplib;
@@ -33,17 +37,6 @@ void CommandHandlerDebug()
     CommandHandler command_handler;
 }
 #endif
-
-// 数据库配置
-// 首先需要创建数据库 disk
-static SqlConfig sql_config = {
-    .host = "127.0.0.1",
-    .port = 3306,
-    .user = "root",
-    .pass = "root123",
-    .database_name = "disk",
-    .charset = "UTF-8",
-};
 
 CommandHandler::CommandHandler(const std::string ip_address, const int port)
     : user_manager_(std::make_unique<UserInfoManager>())
@@ -91,14 +84,14 @@ int CommandHandler::initUserManager()
         cout << user_manager_->getMysqlError() << endl;
 		return 0;
 	}
-
+#ifdef __DATABASE_INIT__
 	if ((ret = user_manager_->initDatabase())) {
 		cout << user_manager_->error(ret) << endl;
 		// if (ret == _UserInfoManager::_RET_SQL_ERR)
         cout << user_manager_->getMysqlError() << endl;
 		return 0;
 	}
-
+#endif
     // 初始化成功
     return 1;
 }
@@ -175,9 +168,10 @@ void CommandHandler::userSignup()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "sign up success";
+        std::string user{};
 
         try {
-            auto user = req_body.at("user");
+            user = req_body.at("user");
             auto password = req_body.at("password");
             auto confirm_password = req_body.at("confirmpassword");
             if (password != confirm_password) {
@@ -207,6 +201,12 @@ void CommandHandler::userSignup()
         // 日志记录注册信息
         LogC::log_printf("%s signup: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
+        // 用户注册成功后添加用户根目录
+        if (ret == 0) {
+            int _ret = file_system_manager().makeFolder(path_join(user, ""));
+            LogC::log_printf("user %s mkdir /%s %s\n", 
+                user.c_str(), user.c_str(), file_system_manager().error(_ret));
+        }
     });
 }
 
@@ -320,22 +320,38 @@ void CommandHandler::fileList()
         int ret = 0;
         std::string msg = "list success";
         vector<json> files;
+        std::string user{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
+            // user = "demo";
             // 获取到绝对路径目录
             auto path = req_body.at("path");
 
-            /// @TODO: 获取目录下的文件信息
-            
-            /// 测试部分
-            // json file;
-            // file["name"] = "filename";
-            // file["type"] = "file";
-            // file["size"] = 1024;
-            // file["time"] = "May 2033";
-            // files.push_back(file);
-            // files.push_back(file);
+            // 获取目录下的文件信息
+            int _ret;
+            vector<FNode> list;
+            _ret = file_system_manager().list(path_join(user, path), list);
+            if (_ret == 0) {
+                for (const auto& f : list) {
+                    json file;
+                    file["name"] = f.name;
+                    file["type"] = "folder";
+                    file["size"] = 0;
+                    if (f.is_file) {
+                        file["type"] = "file";
+                        file["size"] = f.file_size;
+                    }
+
+                    /// TODO: 时间目前无效，需要修改
+                    file["time"] = "May 2033";
+                    files.push_back(file);
+                }
+            } else {
+                ret = -1;
+                msg = file_system_manager().error(_ret);
+            }
+
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -355,6 +371,8 @@ void CommandHandler::fileList()
         res_body["files"] = files;
 
         res.set_content(res_body.dump(), "application/json");
+        LogC::log_printf("%s user %s list %s\n",
+            req.remote_addr.c_str(), user.c_str(), msg.c_str());
     });
 
 }
@@ -551,7 +569,7 @@ void CommandHandler::fileMove()
  * -1 表示未知
  **/
 static std::string make_content_range(
-    const size_t start=-1, const size_t end=-1, const size_t size=-1, 
+    const long long start=-1, const long long end=-1, const long long size=-1, 
     const std::string unit="bytes"
 ) {
     std::string field = unit + ' ';

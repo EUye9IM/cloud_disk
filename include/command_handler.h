@@ -13,11 +13,11 @@
 #include "httplib.h"
 #include "jwt-cpp/token.hpp"
 #include "user_info_manager.h"
+#include "file_system_manager.h"
 
 #ifdef __ANAKIN_DEBUG__
 void CommandHandlerDebug();
 #endif
-
 
 class CommandHandler {
 public:
