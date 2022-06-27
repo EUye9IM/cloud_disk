@@ -13,8 +13,9 @@ DROP TABLE IF EXISTS node;\
 CREATE TABLE node(\
 path VARCHAR(512) NOT NULL,\
 hash char(50),\
+mtime int(11),\
 PRIMARY KEY (path));\
-INSERT INTO node VALUES ('/',NULL);\
+INSERT INTO node VALUES ('/',NULL,NULL);\
 DROP TABLE IF EXISTS file;\
 CREATE TABLE file(\
 hash char(50),\
@@ -90,8 +91,9 @@ int FileSystemManager::makeFile(const std::string &file_path,
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string parent_path, recent_path;
 	static MYSQL_STMT *stmt = nullptr;
-	static MYSQL_BIND in[2];
+	static MYSQL_BIND in[3];
 	static MYSQL_BIND out;
+	static std::time_t mtime;
 	static int num;
 	size_t pos;
 	if (file_path.length() < 2 || file_path[0] != '/')
@@ -155,8 +157,9 @@ int FileSystemManager::makeFile(const std::string &file_path,
 		return _RET_BAD_PATH;
 
 	// create son
+	mtime = std::time(nullptr);
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,?);", -1)) {
+	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,?,?);", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -168,6 +171,8 @@ int FileSystemManager::makeFile(const std::string &file_path,
 	in[1].buffer_type = MYSQL_TYPE_STRING;
 	in[1].buffer = (void *)file_hash.c_str();
 	in[1].buffer_length = file_hash.length();
+	in[2].buffer_type = MYSQL_TYPE_LONG;
+	in[2].buffer = (void *)&mtime;
 
 	if (mysql_stmt_bind_param(stmt, in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
@@ -183,6 +188,7 @@ int FileSystemManager::makeFile(const std::string &file_path,
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
+	mysql_stmt_close(stmt);
 	// file size
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(stmt, "INSERT INTO file VALUES(?,?);", -1)) {
@@ -203,17 +209,18 @@ int FileSystemManager::makeFile(const std::string &file_path,
 		return _RET_SQL_ERR;
 	}
 	if (mysql_stmt_execute(stmt)) {
-		if (mysql_stmt_errno(stmt) == 1062) {
+		if (mysql_stmt_errno(stmt) != 1062) {
+			_mysql_error_msg = mysql_stmt_error(stmt);
 			mysql_stmt_close(stmt);
-			transaction.status = transaction.commit;
-			return _RET_OK;
+			return _RET_SQL_ERR;
 		}
-		_mysql_error_msg = mysql_stmt_error(stmt);
-		mysql_stmt_close(stmt);
-		return _RET_SQL_ERR;
 	}
-
 	mysql_stmt_close(stmt);
+
+	// update mtime
+	if (int ret = this->_updateModifyTime(file_path, mtime)) {
+		return ret;
+	}
 	transaction.status = transaction.commit;
 	return _RET_OK;
 }
@@ -221,9 +228,10 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string parent_path, recent_path;
 	static MYSQL_STMT *stmt = nullptr;
-	static MYSQL_BIND in;
+	static MYSQL_BIND in[2];
 	static MYSQL_BIND out;
 	static int num;
+	static std::time_t mtime;
 	size_t pos;
 	if (folder_path.length() < 2 || folder_path[0] != '/')
 		return _RET_BAD_PATH;
@@ -251,16 +259,16 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 		return _RET_SQL_ERR;
 	}
 
-	memset(&in, 0, sizeof(in));
-	in.buffer_type = MYSQL_TYPE_STRING;
-	in.buffer = (void *)parent_path.c_str();
-	in.buffer_length = parent_path.length();
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)parent_path.c_str();
+	in[0].buffer_length = parent_path.length();
 
 	memset(&out, 0, sizeof(out));
 	out.buffer_type = MYSQL_TYPE_LONG;
 	out.buffer = (void *)&num;
 
-	if (mysql_stmt_bind_param(stmt, &in)) {
+	if (mysql_stmt_bind_param(stmt, in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -285,18 +293,21 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 		return _RET_BAD_PATH;
 
 	// create son
+	mtime = std::time(nullptr);
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,NULL);", -1)) {
+	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,NULL,?);", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
 	memset(&in, 0, sizeof(in));
-	in.buffer_type = MYSQL_TYPE_STRING;
-	in.buffer = (void *)recent_path.c_str();
-	in.buffer_length = recent_path.length();
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)recent_path.c_str();
+	in[0].buffer_length = recent_path.length();
+	in[1].buffer_type = MYSQL_TYPE_LONG;
+	in[1].buffer = (void *)&mtime;
 
-	if (mysql_stmt_bind_param(stmt, &in)) {
+	if (mysql_stmt_bind_param(stmt, in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -314,6 +325,10 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 	if (num != 1)
 		return _RET_BAD_PATH;
 
+	// update mtime
+	if (int ret = this->_updateModifyTime(folder_path, mtime)) {
+		return ret;
+	}
 	transaction.status = transaction.commit;
 	return _RET_OK;
 }
@@ -325,11 +340,12 @@ int FileSystemManager::list(const std::string &folder_path,
 	static std::string regex_parm;
 	static MYSQL_STMT *stmt = nullptr;
 	static MYSQL_BIND in;
-	static MYSQL_BIND out[3];
+	static MYSQL_BIND out[4];
 	static FNode buf_node;
 
 	static char buffer_path[PATH_LEN];
 	static char buffer_hash[HASH_LEN];
+	static std::time_t mtime;
 	static long long buffer_size;
 
 	if (folder_path.length() < 1 || folder_path[0] != '/')
@@ -344,7 +360,7 @@ int FileSystemManager::list(const std::string &folder_path,
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(
 			stmt,
-			"SELECT path, node.hash, size FROM node LEFT JOIN file "
+			"SELECT path, node.hash, mtime, size FROM node LEFT JOIN file "
 			"ON node.hash = file.hash WHERE path REGEXP "
 			"? ORDER BY path",
 			-1)) {
@@ -365,9 +381,10 @@ int FileSystemManager::list(const std::string &folder_path,
 	out[1].buffer_type = MYSQL_TYPE_STRING;
 	out[1].buffer = (void *)&buffer_hash;
 	out[1].buffer_length = sizeof(buffer_hash);
-	out[2].buffer_type = MYSQL_TYPE_LONGLONG;
-	out[2].buffer = (void *)&buffer_size;
-	out[2].buffer_length = sizeof(buffer_size);
+	out[2].buffer_type = MYSQL_TYPE_LONG;
+	out[2].buffer = (void *)&mtime;
+	out[3].buffer_type = MYSQL_TYPE_LONGLONG;
+	out[3].buffer = (void *)&buffer_size;
 
 	if (mysql_stmt_bind_param(stmt, &in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
@@ -385,15 +402,16 @@ int FileSystemManager::list(const std::string &folder_path,
 		return _RET_SQL_ERR;
 	}
 	while (!mysql_stmt_fetch(stmt)) {
-		static size_t pos1,pos2;
+		static size_t pos1, pos2;
 		buf_node.name = buffer_path;
 		buf_node.is_file = (buffer_hash[0] != 0);
 		buf_node.file_hash = buffer_hash;
+		buf_node.modufy_time = mtime;
 		buf_node.file_size = buffer_size;
 
 		pos1 = buf_node.name.find_last_of('/');
 		pos2 = buf_node.name.find_last_of('/', pos1 - 1);
-		buf_node.name = buf_node.name.substr(pos2+1, pos1-pos2-1);
+		buf_node.name = buf_node.name.substr(pos2 + 1, pos1 - pos2 - 1);
 
 		fnode_list.push_back(buf_node);
 	}
@@ -438,4 +456,40 @@ const char *FileSystemManager::error(int error_no) {
 		return "unknown error";
 	}
 	return "unknown error";
+}
+int FileSystemManager::_updateModifyTime(const std::string &path,
+										 std::time_t mtime) {
+	static std::string recent_path;
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in[2];
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt,
+						   "UPDATE node SET mtime = ? where path = "
+						   "SUBSTR(?,1,CHAR_LENGTH(path));",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_LONG;
+	in[0].buffer = (void *)&mtime;
+	in[1].buffer_type = MYSQL_TYPE_STRING;
+	in[1].buffer = (void *)path.c_str();
+	in[1].buffer_length = path.length();
+
+	if (mysql_stmt_bind_param(stmt, in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	printf("%s\n", path.c_str());
+
+	mysql_stmt_close(stmt);
+	return 0;
 }

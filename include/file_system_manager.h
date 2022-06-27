@@ -6,10 +6,12 @@
 #include <mysql/mysql.h>
 #include <string>
 #include <vector>
+#include <ctime>
 
 struct FNode {
 	std::string name;
 	bool is_file;
+	std::time_t modufy_time;
 	std::string file_hash;
 	long long file_size;
 };
@@ -36,6 +38,7 @@ public:
 
 private:
 	MYSQL *sql;
+	int _updateModifyTime(const std::string &path,std::time_t mtime);
 	std::string _mysql_error_msg;
 	std::mutex _lock;
 };
