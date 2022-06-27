@@ -23,13 +23,32 @@ FileSystemManager& file_system_manager()
 }
 
 // 路径拼接
-std::string path_join(const std::string user, const std::string path)
+// std::string path_join(const std::string user, const std::string path)
+// {
+//     std::string new_path = '/' + user;
+//     if (path[0] == '/') {
+//         new_path += path;
+//     } else {
+//         new_path += '/' + path;
+//     }
+//     return new_path;
+// }
+
+std::string path_join(
+    const std::string user, 
+    const std::initializer_list<std::string> paths)
 {
-    std::string new_path = '/' + user;
-    if (path[0] == '/') {
-        new_path += path;
-    } else {
-        new_path += '/' + path;
+    std::string result = '/' + user;
+    for (const auto& path : paths) {
+        if (path[0] == '/') {
+            result += path;
+        } else {
+            result += '/' + path;
+        }
+        // 如果 result 最后有'/'，去除，方便下一次连接路径
+        if (result.back() == '/') {
+            result.pop_back();
+        }
     }
-    return new_path;
+    return result;
 }

@@ -5,6 +5,7 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 #include <string>
+#include <initializer_list>
 #include "file_system_manager.h"
 
 // 数据库是否初始化
@@ -25,6 +26,7 @@ static SqlConfig sql_config = {
 FileSystemManager& file_system_manager();
 
 // 路径拼接
-std::string path_join(const std::string user, const std::string path);
+// std::string path_join(const std::string user, const std::string path);
+std::string path_join(const std::string user, const std::initializer_list<std::string>);
 
 #endif

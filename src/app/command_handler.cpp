@@ -203,7 +203,7 @@ void CommandHandler::userSignup()
                         req.remote_addr.c_str(), msg.c_str());
         // 用户注册成功后添加用户根目录
         if (ret == 0) {
-            int _ret = file_system_manager().makeFolder(path_join(user, ""));
+            int _ret = file_system_manager().makeFolder(path_join(user, {""}));
             LogC::log_printf("user %s mkdir /%s %s\n", 
                 user.c_str(), user.c_str(), file_system_manager().error(_ret));
         }
@@ -331,7 +331,7 @@ void CommandHandler::fileList()
             // 获取目录下的文件信息
             int _ret;
             vector<FNode> list;
-            _ret = file_system_manager().list(path_join(user, path), list);
+            _ret = file_system_manager().list(path_join(user, {path}), list);
             if (_ret == 0) {
                 for (const auto& f : list) {
                     json file;
@@ -383,15 +383,21 @@ void CommandHandler::fileNewFolder()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "new folder success";
+        std::string user{}, path{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
             // 获取到绝对路径目录
             auto cwd = req_body.at("cwd");
             auto folder_name = req_body.at("foldername");
 
-            /// @TODO: 创建文件夹
-            
+            // 创建文件夹
+            path = path_join(user, {cwd, folder_name});
+            int _ret = file_system_manager().makeFolder(path);
+            if (_ret != 0) {
+                ret = -1;
+                msg = file_system_manager().error(_ret);
+            }
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -404,12 +410,13 @@ void CommandHandler::fileNewFolder()
             msg = "invalid login";
         }
 
-        
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        LogC::log_printf("%s user %s mkdir %s: %s\n",
+            req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
     });
 
 }
