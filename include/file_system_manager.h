@@ -38,6 +38,7 @@ public:
 
 private:
 	MYSQL *sql;
+	int _updateModifyTime(const std::string &path,std::time_t mtime);
 	std::string _mysql_error_msg;
 	std::mutex _lock;
 };
