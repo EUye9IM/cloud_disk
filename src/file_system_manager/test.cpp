@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 		cout << (*i).name << " " << (*i).is_file;
 		if ((*i).is_file)
 			cout << " " << (*i).file_hash << " " << (*i).file_size;
-		cout << endl;
+		cout << " " << std::asctime(std::localtime(&(*i).modufy_time));
 	}
 
 	return 0;
