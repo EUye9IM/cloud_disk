@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
 	cout << fs.getMysqlError() << endl;
 	ret = fs.makeFile("/123/234", "aaa", 213);
 	cout << __LINE__ << fs.error(ret) << endl;
+	getchar();
 	ret = fs.makeFile("/123/244", "aaa", 2113);
 	cout << __LINE__ << fs.error(ret) << endl;
 
