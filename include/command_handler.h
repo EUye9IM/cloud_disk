@@ -6,7 +6,7 @@
 #define COMMAND_HANDLER_H
 
 /* 个人条件编译调试 */
-// #define __ANAKIN_DEBUG__
+#define __ANAKIN_DEBUG__
 
 #include <string>
 #include <memory>
