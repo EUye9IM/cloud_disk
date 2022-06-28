@@ -144,7 +144,7 @@ void CommandHandler::userLogin()
             } else {
                 /* 登录成功需要携带token返回 */
                 // 创建token
-                auto token = Anakin::Token::create(user);
+                auto token = Anakin::Token::create(user, 100);
                 token = "Bearer " + token;
                 res.set_header("Authorization", token);
             }
@@ -624,15 +624,25 @@ void CommandHandler::filePreUpload()
                 msg = "file exited";
             } else {
                 // 文件不存在，检查是否满足秒传
-                /// TODO: 需要根据md5检查是否满足秒传
-
-                // 如果没有此文件
-                _ret = AccessQueue::Instance().startFileQueue(
-                    path_join(user, {path}), md5, size
-                );
-                if (_ret == 0) {
+                // 根据md5检查是否满足秒传
+                bool is_exist;
+                file_system_manager().hashExist(md5, is_exist);
+                if (!is_exist) {
+                    // 如果没有此文件
+                    _ret = AccessQueue::Instance().startFileQueue(
+                        path_join(user, {path}), md5, size
+                    );
+                    // 不想判断错误了
                     // 第一次，获取到分配的切片号
                     ret = AccessQueue::Instance().getTask(md5);
+                } else {
+                    // 文件已存在，秒传
+                    file_system_manager().makeFile(
+                        path_join(user, {path}), md5, size
+                    );
+                }
+                if (ret == 0) {
+                    msg = "file transfer completed in seconds";
                 }
             }
         }
