@@ -204,6 +204,7 @@ void CommandHandler::userSignup()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
         // 日志记录注册信息
@@ -512,6 +513,9 @@ void CommandHandler::fileDelete()
             auto paths = req_body.at("paths");
 
             /// @TODO: 批量删除文件
+            // int _ret = file_system_manager().remove(
+
+            // )
             
         }
         catch (const json::exception& e) {
@@ -542,16 +546,26 @@ void CommandHandler::fileCopy()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "copy success";
+        std::string user{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
             // 获取到绝对路径目录
             auto old_cwd = req_body.at("oldcwd");
             auto new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             /// @TODO: 复制文件操作
-            
+            for (const auto& f : files) {
+                ret = file_system_manager().copy(
+                    path_join(user, {old_cwd, f}),
+                    path_join(user, {new_cwd, f})
+                );
+                if (ret != 0) {
+                    msg = file_system_manager().error(ret);
+                    break;
+                }
+            }
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -563,7 +577,6 @@ void CommandHandler::fileCopy()
             ret = -2;
             msg = "invalid login";
         }
-
         
         json res_body;
         res_body["ret"] = ret;
@@ -581,15 +594,26 @@ void CommandHandler::fileMove()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "move success";
+        std::string user{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
             // 获取到绝对路径目录
             auto old_cwd = req_body.at("oldcwd");
             auto new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             /// @TODO: 移动文件操作
+            for (const auto& f : files) {
+                ret = file_system_manager().move(
+                    path_join(user, {old_cwd, f}),
+                    path_join(user, {new_cwd, f})
+                );
+                if (ret != 0) {
+                    msg = file_system_manager().error(ret);
+                    break;
+                }
+            }
             
         }
         catch (const json::exception& e) {
