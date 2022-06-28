@@ -1,3 +1,5 @@
+#include "some_tool_about_path.h"
+
 #include <cstring>
 #include <file_system_manager.h>
 #include <mysql/mysql.h>
@@ -413,6 +415,7 @@ int FileSystemManager::list(const std::string &folder_path,
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
+	memset(buffer_hash, 0, sizeof(buffer_hash));
 	while (!mysql_stmt_fetch(stmt)) {
 		static size_t pos1, pos2;
 		buf_node.name = buffer_path;
@@ -426,8 +429,47 @@ int FileSystemManager::list(const std::string &folder_path,
 		buf_node.name = buf_node.name.substr(pos2 + 1, pos1 - pos2 - 1);
 
 		fnode_list.push_back(buf_node);
+		memset(buffer_hash, 0, sizeof(buffer_hash));
 	}
 	mysql_stmt_close(stmt);
+
+	return _RET_OK;
+}
+int FileSystemManager::move(const std::string &old_path,
+							const std::string &new_path) {
+	std::lock_guard<std::mutex> lock(_lock);
+	static std::string parent_path, the_old_path, name_path;
+	// static MYSQL_STMT *stmt = nullptr;
+	// static MYSQL_BIND in[3];
+	// static MYSQL_BIND out;
+	// static std::time_t mtime;
+	// static char buffer_hash[HASH_LEN];
+	// static int num;
+	if (old_path.length() < 2 || old_path[0] != '/')
+		return _RET_BAD_PATH;
+	if (new_path.length() < 2 || new_path[0] != '/')
+		return _RET_BAD_PATH;
+	if (old_path.back() != '/')
+		the_old_path = old_path + "/";
+	else
+		the_old_path = old_path;
+	if (new_path.back() != '/')
+		parent_path = new_path + "/";
+	else
+		parent_path = new_path;
+
+	TransactionGuard transaction(sql);
+	if (transaction.status == transaction.bad) {
+		_mysql_error_msg = mysql_error(sql);
+		return _RET_SQL_ERR;
+	}
+
+	int ret = this->_checkMovePath(the_old_path, parent_path, name_path);
+	if (ret != _RET_OK)
+		return ret;
+
+	printf("%s -> %s %s\n", the_old_path.c_str(), parent_path.c_str(),
+		   name_path.c_str());
 
 	return _RET_OK;
 }
@@ -509,8 +551,10 @@ int FileSystemManager::remove(
 		return _RET_SQL_ERR;
 	}
 
+	memset(buffer_hash, 0, sizeof(buffer_hash));
 	while (!mysql_stmt_fetch(stmt)) {
 		should_be_removed_hashes.push_back(std::string(buffer_hash));
+		memset(buffer_hash, 0, sizeof(buffer_hash));
 	}
 	mysql_stmt_close(stmt);
 
@@ -545,7 +589,7 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	static long long buffer_size;
 	static size_t pos1, pos2;
 
-	if (path.length() < 2 || path[0] != '/')
+	if (path.length() < 1 || path[0] != '/')
 		return _RET_BAD_PATH;
 	if (path.back() != '/')
 		recent_path = path + "/";
@@ -594,11 +638,17 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
+	memset(buffer_hash, 0, sizeof(buffer_hash));
 	if (mysql_stmt_fetch(stmt)) {
+		if (mysql_stmt_errno(stmt) == 0) {
+			mysql_stmt_close(stmt);
+			return _RET_NO_EXIST;
+		}
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
+
 	mysql_stmt_close(stmt);
 	file.name = buffer_name;
 	file.is_file = (buffer_hash[0] != 0);
@@ -611,6 +661,55 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	file.name = file.name.substr(pos2 + 1, pos1 - pos2 - 1);
 	return _RET_OK;
 }
+int FileSystemManager::hashExist(const std::string &hash, bool &is_exist) {
+	std::lock_guard<std::mutex> lock(_lock);
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in;
+	static MYSQL_BIND out;
+	static int num;
+
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "SELECT count(*) FROM file WHERE hash = ?;",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)hash.c_str();
+	in.buffer_length = hash.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_LONG;
+	out.buffer = (void *)&num;
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_fetch(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+	is_exist = (num == 1);
+	return _RET_OK;
+}
+
 int FileSystemManager::initDatabase() {
 	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
@@ -643,6 +742,10 @@ const char *FileSystemManager::error(int error_no) {
 		return "bad path";
 	case _RET_EXIST:
 		return "file or file folder exist";
+	case _RET_NO_EXIST:
+		return "file or file folder does not exist";
+	case _RET_RECUR:
+		return "recursive copy/move";
 	default:
 		return "unknown error";
 	}
@@ -679,8 +782,189 @@ int FileSystemManager::_updateModifyTime(const std::string &path,
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	printf("%s\n", path.c_str());
 
 	mysql_stmt_close(stmt);
 	return 0;
+}
+
+int FileSystemManager::_checkMovePath(const std::string &from_path,
+									  std::string &to_par,
+									  std::string &to_name) {
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in;
+	static MYSQL_BIND out;
+	static char buffer_hash[HASH_LEN];
+	// if from exist --
+	// find if parent dir exist --
+	//     if is_file
+	//          error
+	//     else
+	//          name = getself oldpath
+	// else
+	//     name = getself parent
+	//     parent = getparent parent
+	//     if parent dir not exist --
+	//         err
+	//     if isfile
+	//         err
+
+	// find if from exist
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ?;", -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)from_path.c_str();
+	in.buffer_length = from_path.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_STRING;
+	out.buffer = (void *)buffer_hash;
+	out.buffer_length = sizeof(buffer_hash);
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(buffer_hash, 0, sizeof(buffer_hash));
+	if (mysql_stmt_fetch(stmt)) {
+		if (mysql_stmt_errno(stmt) == 0) {
+			mysql_stmt_close(stmt);
+			return _RET_NO_EXIST;
+		}
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+
+	// find if parent dir exist
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ?;", -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)to_par.c_str();
+	in.buffer_length = to_par.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_STRING;
+	out.buffer = (void *)buffer_hash;
+	out.buffer_length = sizeof(buffer_hash);
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(buffer_hash, 0, sizeof(buffer_hash));
+	if (!mysql_stmt_fetch(stmt)) {
+		mysql_stmt_close(stmt);
+		// parent exist
+		//	parent is_file
+		if (buffer_hash[0] != '\0') {
+			return _RET_BAD_PATH;
+		}
+		to_name = getSelf(from_path) + "/";
+
+		if (from_path != to_par.substr(0, from_path.length()))
+			return _RET_OK;
+		return _RET_RECUR;
+	}
+
+	if (mysql_stmt_errno(stmt) != 0) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+
+	// parent not exist
+	//     name = getself parent
+	to_name = getSelf(to_par) + "/";
+	//     parent = getparent parent
+	to_par = getParent(to_par);
+
+	//     if parent dir not exist
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(
+			stmt, "SELECT hash FROM node WHERE path = ? AND hash is NULL;",
+			-1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)to_par.c_str();
+	in.buffer_length = to_par.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_STRING;
+	out.buffer = (void *)buffer_hash;
+	out.buffer_length = sizeof(buffer_hash);
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(buffer_hash, 0, sizeof(buffer_hash));
+	if (!mysql_stmt_fetch(stmt)) {
+		mysql_stmt_close(stmt);
+		// parent exist
+		//	parent is_dir
+		if (from_path != to_par.substr(0, from_path.length()))
+			return _RET_OK;
+		return _RET_RECUR;
+	}
+	// parent not exist
+
+	if (mysql_stmt_errno(stmt) != 0) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+	return _RET_BAD_PATH;
 }
