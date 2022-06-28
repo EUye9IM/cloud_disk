@@ -46,6 +46,8 @@ protected:
     void fileCopy();
     void fileMove();
     void fileDownload();
+    void filePreUpload();
+    void fileUpload();
 
     void routeTest();
 

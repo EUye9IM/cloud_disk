@@ -8,6 +8,7 @@
 #include <fstream>
 #include <mutex>
 #include <string>
+#include "utility.hpp"
 
 using namespace std;
 
@@ -16,6 +17,9 @@ AccessQueue::~AccessQueue()
     // 清空 map 空间
     // files_.clear();
     upload_.clear();
+
+    // 处理无用变量
+    UNUSED_VARIABLE(sql_config);
 }
 
 // 启动一个文件上传队列
@@ -30,8 +34,8 @@ int AccessQueue::startFileQueue(
         size_q slice_num = (file_size + FILE_SLICE_SIZE - 1) / FILE_SLICE_SIZE;
 
         FileUploadInfo file_info = {
-            0, 0, slice_num,
-            file_size, {path}, string(slice_num, '0')
+            1, 0, slice_num,
+            file_size, {path}, string(slice_num+1, '0')
         };
 
         // 记录切片状态，目前采用string记录
@@ -67,14 +71,42 @@ size_q AccessQueue::getTask(std::string file_md5, size_q current_num)
         return 0;
     }
     
-    size_q next_task = 0;   // 接下来需要上传的切片
-    if (file->second.max_allocate_num_ == file->second.slice_num_) {
-        
-    }
-    // 预上传阶段
-    if (current_num == 0) {
-        ++upload_.find(file_md5)->second.max_allocate_num_;
+    // 完成 current_num 的标记，更新未完成的最小切片号
+    if (current_num > 0) {
+        // 标记为已经完成
+        file->second.status[current_num] = '1';
+        int num = file->second.min_unfinish_num_;
+        while (file->second.status[num] == '1') {
+            num++;
+        }
+        file->second.min_unfinish_num_ = num;
     }
 
-    return 0;
+    size_q next_task = 0;   // 接下来需要上传的切片
+    // 还有未分配的文件切片
+    if (file->second.max_allocate_num_ <= file->second.slice_num_) {
+        next_task = file->second.max_allocate_num_++;
+    }
+    // 已经全部分配，使用最小的未完成的序号
+    else {
+        next_task = file->second.min_unfinish_num_;
+    }
+
+    // 已经全部完成，next_task = 0，同时写入用户文件，销毁临时数据
+    // 同时也处理 0 文件
+    if (file->second.min_unfinish_num_ > file->second.slice_num_ || 
+        file->second.file_size_ == 0) {
+        next_task = 0;
+        // 写入用户文件系统
+        for (const auto& path : file->second.files_) {
+            file_system_manager().makeFile(
+                path, file_md5, file->second.file_size_
+            );
+        }
+        // 释放空间
+        file->second.files_.clear();
+        upload_.erase(file);
+    }
+
+    return next_task;
 }
