@@ -160,6 +160,7 @@ void CommandHandler::userLogin()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
 
         // 日志记录登录信息
         LogC::log_printf("%s login: %s\n", 
@@ -203,6 +204,7 @@ void CommandHandler::userSignup()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         // 日志记录注册信息
         LogC::log_printf("%s signup: %s\n", 
@@ -239,6 +241,7 @@ void CommandHandler::userLogout()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         // 日志记录登出信息
         LogC::log_printf("%s logout: %s\n", 
@@ -293,6 +296,7 @@ void CommandHandler::userChangepass()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         // 日志记录登录信息
         LogC::log_printf("%s changepass: %s\n", 
@@ -395,6 +399,7 @@ void CommandHandler::fileList()
         res_body["msg"] = msg;
         res_body["files"] = files;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s list %s\n",
             req.remote_addr.c_str(), user.c_str(), msg.c_str());
@@ -439,6 +444,7 @@ void CommandHandler::fileNewFolder()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s mkdir %s: %s\n",
             req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
@@ -479,6 +485,7 @@ void CommandHandler::fileRename()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -497,6 +504,9 @@ void CommandHandler::fileDelete()
             auto paths = req_body.at("paths");
 
             /// @TODO: 批量删除文件
+            // int _ret = file_system_manager().remove(
+
+            // )
             
         }
         catch (const json::exception& e) {
@@ -515,6 +525,7 @@ void CommandHandler::fileDelete()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -526,16 +537,26 @@ void CommandHandler::fileCopy()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "copy success";
+        std::string user{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
             // 获取到绝对路径目录
             auto old_cwd = req_body.at("oldcwd");
             auto new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             /// @TODO: 复制文件操作
-            
+            for (const auto& f : files) {
+                ret = file_system_manager().copy(
+                    path_join(user, {old_cwd, f}),
+                    path_join(user, {new_cwd, f})
+                );
+                if (ret != 0) {
+                    msg = file_system_manager().error(ret);
+                    break;
+                }
+            }
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -547,12 +568,12 @@ void CommandHandler::fileCopy()
             ret = -2;
             msg = "invalid login";
         }
-
         
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -564,15 +585,26 @@ void CommandHandler::fileMove()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "move success";
+        std::string user{};
 
         try {
-            verify_token(req);
+            user = verify_token(req);
             // 获取到绝对路径目录
             auto old_cwd = req_body.at("oldcwd");
             auto new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             /// @TODO: 移动文件操作
+            for (const auto& f : files) {
+                ret = file_system_manager().move(
+                    path_join(user, {old_cwd, f}),
+                    path_join(user, {new_cwd, f})
+                );
+                if (ret != 0) {
+                    msg = file_system_manager().error(ret);
+                    break;
+                }
+            }
             
         }
         catch (const json::exception& e) {
@@ -591,6 +623,7 @@ void CommandHandler::fileMove()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -662,6 +695,7 @@ void CommandHandler::filePreUpload()
         res_body["msg"] = msg;
         res_body["slicesize"] = AccessQueue::FILE_SLICE_SIZE;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s preupload %s: %s\n", 
             req.remote_addr.c_str(), user.c_str(), path.c_str(), 
@@ -708,6 +742,7 @@ void CommandHandler::fileUpload()
         res_body["msg"] = msg;
         res_body["next"] = next;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s upload %s %d: %s\n", 
             req.remote_addr.c_str(), user.c_str(), md5.c_str(), 
