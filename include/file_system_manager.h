@@ -2,11 +2,11 @@
 #define CLOUD_DISK_FILE_SYSTEM_MANAGER
 #include <sql_config.h>
 
+#include <ctime>
 #include <mutex>
 #include <mysql/mysql.h>
 #include <string>
 #include <vector>
-#include <ctime>
 
 struct FNode {
 	std::string name;
@@ -38,19 +38,24 @@ public:
 
 private:
 	MYSQL *sql;
-	int _updateModifyTime(const std::string &path,std::time_t mtime);
+	int _updateModifyTime(const std::string &path, std::time_t mtime);
+	int _checkMovePath(const std::string &from_path, std::string &to_par,
+					   std::string &to_name);
 	std::string _mysql_error_msg;
 	std::mutex _lock;
 };
 
 namespace _FileSystemManager {
-const int _RET_OK = 0;
-const int _RET_CONNECTED = -1;
-const int _RET_NO_CONN = -2;
-const int _RET_CONN = -3;
-const int _RET_SQL_ERR = -4;
-const int _RET_BAD_PATH = -5;
-const int _RET_EXIST = -6;
+const int _RET_OK = 0;		   // success
+const int _RET_CONNECTED = -1; // has been connected
+const int _RET_NO_CONN = -2;   // has not been connect
+const int _RET_CONN = -3;	   // connect failed
+const int _RET_SQL_ERR = -4;   // sql query error
+const int _RET_BAD_PATH = -5;  // given a bad path
+const int _RET_EXIST = -6;	   // file/file folder exist
+const int _RET_NO_EXIST = -7;  // file/file folder does not exist
+const int _RET_RECUR = -8;	   // recursive copy/move
+// const int _RET_NO_EXIST = -7;
 } // namespace _FileSystemManager
 
 #endif

@@ -64,6 +64,12 @@ int main(int argc, char *argv[]) {
 			ret = fs.makeFile(args[0], args[1], size);
 			continue;
 		}
+		if (in == "mv") {
+			string args[2];
+			cin >> args[0] >> args[1];
+			ret = fs.move(args[0], args[1]);
+			continue;
+		}
 		if (in == "rm") {
 			string args;
 			cin >> args;
@@ -81,6 +87,7 @@ int main(int argc, char *argv[]) {
 			printf("%10s%5d%10s%10lld%40s", r.name.c_str(), r.is_file,
 				   r.file_hash.c_str(), r.file_size,
 				   asctime(localtime(&r.modufy_time)));
+			continue;
 		}
 		if (in == "quit") {
 			break;
