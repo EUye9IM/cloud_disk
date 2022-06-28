@@ -70,12 +70,18 @@ int main(int argc, char *argv[]) {
 			ret = fs.move(args[0], args[1]);
 			continue;
 		}
+		if (in == "cp") {
+			string args[2];
+			cin >> args[0] >> args[1];
+			ret = fs.copy(args[0], args[1]);
+			continue;
+		}
 		if (in == "hash") {
 			string args;
 			bool is_exist;
 			cin >> args;
-			ret = fs.hashExist(args,is_exist);
-			cout<<is_exist<<endl;
+			ret = fs.hashExist(args, is_exist);
+			cout << is_exist << endl;
 			continue;
 		}
 		if (in == "rm") {
