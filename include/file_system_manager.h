@@ -30,7 +30,7 @@ public:
 	int copy(const std::string &old_path, const std::string &new_path);
 	int remove(const std::string &path,
 			   std::vector<std::string> &should_be_removed_hashes);
-	int getHash(const std::string &path, std::string &hash);
+	int getFile(const std::string &path, FNode &file);
 
 	int initDatabase();
 	static const char *error(int error_no);

@@ -17,32 +17,75 @@ int main(int argc, char *argv[]) {
 
 	FileSystemManager fs;
 
-	int ret;
-	ret = fs.connect(sql_config);
-	cout << __LINE__ << fs.error(ret) << endl;
-
-	ret = fs.initDatabase();
-	cout << __LINE__ << fs.error(ret) << endl;
-
-	ret = fs.makeFolder("/123");
-	cout << __LINE__ << fs.error(ret) << endl;
-	ret = fs.makeFile("/124", "abcd", 321);
-	cout << __LINE__ << fs.error(ret) << endl;
-	cout << fs.getMysqlError() << endl;
-	ret = fs.makeFile("/123/234", "aaa", 213);
-	cout << __LINE__ << fs.error(ret) << endl;
-	getchar();
-	ret = fs.makeFile("/123/244", "aaa", 2113);
-	cout << __LINE__ << fs.error(ret) << endl;
-
-	vector<FNode> list;
-	ret = fs.list("/", list);
-	cout << __LINE__ << fs.error(ret) << endl;
-	for (auto i = list.begin(); i != list.end(); i++) {
-		cout << (*i).name << " " << (*i).is_file;
-		if ((*i).is_file)
-			cout << " " << (*i).file_hash << " " << (*i).file_size;
-		cout << " " << std::asctime(std::localtime(&(*i).modufy_time));
+	if (fs.connect(sql_config)) {
+		cout << fs.getMysqlError() << endl;
+		return 0;
+	}
+	if (fs.initDatabase()) {
+		cout << fs.getMysqlError() << endl;
+		return 0;
+	}
+	int ret = 1;
+	while (1) {
+		if (ret <= 0) {
+			cout << fs.error(ret) << endl;
+			if (ret == _FileSystemManager::_RET_SQL_ERR)
+				cout << fs.getMysqlError() << endl;
+		}
+		cout << " > ";
+		cout.flush();
+		string in;
+		cin >> in;
+		if (in == "ls") {
+			string args;
+			cin >> args;
+			vector<FNode> node_list;
+			ret = fs.list(args, node_list);
+			printf("%10s%5s%10s%10s%40s\n", "name", "is_f", "hash", "size",
+				   "mtime");
+			for (auto i = node_list.begin(); i != node_list.end(); i++) {
+				auto r = (*i);
+				printf("%10s%5d%10s%10lld%40s", r.name.c_str(), r.is_file,
+					   r.file_hash.c_str(), r.file_size,
+					   asctime(localtime(&r.modufy_time)));
+			}
+			continue;
+		}
+		if (in == "mkdir") {
+			string args;
+			cin >> args;
+			ret = fs.makeFolder(args);
+			continue;
+		}
+		if (in == "mkfile") {
+			string args[2];
+			int size;
+			cin >> args[0] >> args[1] >> size;
+			ret = fs.makeFile(args[0], args[1], size);
+			continue;
+		}
+		if (in == "rm") {
+			string args;
+			cin >> args;
+			vector<string> list;
+			ret = fs.remove(args, list);
+			cout << "list:" << endl;
+			for (auto i = list.begin(); i != list.end(); i++)
+				cout << (*i) << endl;
+		}
+		if (in == "cat") {
+			string args;
+			FNode r;
+			cin >> args;
+			ret = fs.getFile(args, r);
+			printf("%10s%5d%10s%10lld%40s", r.name.c_str(), r.is_file,
+				   r.file_hash.c_str(), r.file_size,
+				   asctime(localtime(&r.modufy_time)));
+		}
+		if (in == "quit") {
+			break;
+		}
+		ret = 1;
 	}
 
 	return 0;
