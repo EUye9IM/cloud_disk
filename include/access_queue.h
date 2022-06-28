@@ -35,9 +35,15 @@ public:
     AccessQueue(const AccessQueue&) = delete;
     AccessQueue& operator=(const AccessQueue&) = delete;
 
+    // 单例模式
+    static AccessQueue& Instance() {
+        static AccessQueue aq;
+        return aq;
+    }
     
     // 文件上传信息
     // 任意时刻，一个文件切片有 上传完成/上传中/未开始上传 三种状态
+    // 结构中的序号从 1 开始计算，与外界保持一致
     struct FileUploadInfo{
         size_q min_unfinish_num_;    // 传输未完成的切片的最小序号
         size_q max_allocate_num_;    // 已经分配上传的切片的最大序号

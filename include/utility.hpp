@@ -11,6 +11,8 @@
 // 数据库是否初始化
 // #define __DATABASE_INIT__
 
+#define UNUSED_VARIABLE(x) ((void)(x))
+
 // 数据库配置
 // 首先需要创建数据库 disk
 static SqlConfig sql_config = {

@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "access_queue.h"
 #include "file_system_manager.h"
 #include "httplib.h"
 #include "json.hpp"
@@ -118,6 +119,8 @@ void CommandHandler::fileRouterConfigure()
     fileCopy();
     fileMove();
     fileDownload();
+    filePreUpload();
+    fileUpload();
 }
 
 /* 用户登录 */
@@ -593,6 +596,115 @@ void CommandHandler::fileMove()
 
 }
 
+// 文件预上传
+void CommandHandler::filePreUpload()
+{
+    server_.Post("/api/file/preupload", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        std::string user{}, path{};
+        int ret = 0;
+        std::string msg = "preupload success";
+        
+        try {
+            user = verify_token(req);
+            // 获取预上传文件等信息
+            path = req_body.at("path");
+            auto size = req_body.at("size");
+            auto md5 = req_body.at("md5");
+
+            int _ret;
+            FNode f;
+            // 首先检查文件是否重复
+            _ret = file_system_manager().getFile(
+                path_join(user, {path}), f
+            );
+            if (_ret == 0) {
+                // 当前文件已经存在
+                ret = -1;
+                msg = "file exited";
+            } else {
+                // 文件不存在，检查是否满足秒传
+                /// TODO: 需要根据md5检查是否满足秒传
+
+                // 如果没有此文件
+                _ret = AccessQueue::Instance().startFileQueue(
+                    path_join(user, {path}), md5, size
+                );
+                if (_ret == 0) {
+                    // 第一次，获取到分配的切片号
+                    ret = AccessQueue::Instance().getTask(md5);
+                }
+            }
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+        res_body["slicesize"] = AccessQueue::FILE_SLICE_SIZE;
+
+        res.set_content(res_body.dump(), "application/json");
+        LogC::log_printf("%s user %s preupload %s: %s\n", 
+            req.remote_addr.c_str(), user.c_str(), path.c_str(), 
+            msg.c_str());
+    });
+}
+
+// 文件上传
+void CommandHandler::fileUpload()
+{
+    server_.Post("/api/file/upload", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        std::string user{}, md5{};
+        int ret = 0, next = 0, num{};
+        std::string msg = "upload success";
+        
+        try {
+            user = verify_token(req);
+            // 获取上传文件切片信息
+            md5 = req_body.at("md5");
+            auto data = req_body.at("data");
+            num = req_body.at("num");
+            /// TODO: 写入信息
+
+            next = AccessQueue::Instance().getTask(md5, num);
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+
+        if (next == 0) {
+            msg = "upload finish";
+        }
+
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+        res_body["next"] = next;
+
+        res.set_content(res_body.dump(), "application/json");
+        LogC::log_printf("%s user %s upload %s %d: %s\n", 
+            req.remote_addr.c_str(), user.c_str(), md5.c_str(), 
+            num, msg.c_str());
+    });
+}
+
 /**
  * 生成 http Content-Range 字段
  * -1 表示未知
@@ -656,6 +768,7 @@ void CommandHandler::fileDownload()
     });
 
 }
+
 
 void CommandHandler::routeTest()
 {
