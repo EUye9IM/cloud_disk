@@ -31,6 +31,7 @@ public:
 	int remove(const std::string &path,
 			   std::vector<std::string> &should_be_removed_hashes);
 	int getFile(const std::string &path, FNode &file);
+	int hashExist(const std::string &hash,bool &is_exist);
 
 	int initDatabase();
 	static const char *error(int error_no);

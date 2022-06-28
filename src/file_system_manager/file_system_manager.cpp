@@ -661,6 +661,55 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	file.name = file.name.substr(pos2 + 1, pos1 - pos2 - 1);
 	return _RET_OK;
 }
+int FileSystemManager::hashExist(const std::string &hash, bool &is_exist) {
+	std::lock_guard<std::mutex> lock(_lock);
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in;
+	static MYSQL_BIND out;
+	static int num;
+
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "SELECT count(*) FROM file WHERE hash = ?;",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(&in, 0, sizeof(in));
+	in.buffer_type = MYSQL_TYPE_STRING;
+	in.buffer = (void *)hash.c_str();
+	in.buffer_length = hash.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_LONG;
+	out.buffer = (void *)&num;
+
+	if (mysql_stmt_bind_param(stmt, &in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_fetch(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+	is_exist = (num == 1);
+	return _RET_OK;
+}
+
 int FileSystemManager::initDatabase() {
 	std::lock_guard<std::mutex> lock(_lock);
 	if (!sql)
