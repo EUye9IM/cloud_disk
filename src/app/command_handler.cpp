@@ -160,6 +160,7 @@ void CommandHandler::userLogin()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
 
         // 日志记录登录信息
         LogC::log_printf("%s login: %s\n", 
@@ -204,6 +205,7 @@ void CommandHandler::userSignup()
         res_body["msg"] = msg;
 
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         // 日志记录注册信息
         LogC::log_printf("%s signup: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
@@ -239,6 +241,7 @@ void CommandHandler::userLogout()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         // 日志记录登出信息
         LogC::log_printf("%s logout: %s\n", 
@@ -293,6 +296,7 @@ void CommandHandler::userChangepass()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         // 日志记录登录信息
         LogC::log_printf("%s changepass: %s\n", 
@@ -395,6 +399,7 @@ void CommandHandler::fileList()
         res_body["msg"] = msg;
         res_body["files"] = files;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s list %s\n",
             req.remote_addr.c_str(), user.c_str(), msg.c_str());
@@ -439,6 +444,7 @@ void CommandHandler::fileNewFolder()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s mkdir %s: %s\n",
             req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
@@ -479,6 +485,7 @@ void CommandHandler::fileRename()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -515,6 +522,7 @@ void CommandHandler::fileDelete()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -553,6 +561,7 @@ void CommandHandler::fileCopy()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -591,6 +600,7 @@ void CommandHandler::fileMove()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
     });
 
@@ -662,6 +672,7 @@ void CommandHandler::filePreUpload()
         res_body["msg"] = msg;
         res_body["slicesize"] = AccessQueue::FILE_SLICE_SIZE;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s preupload %s: %s\n", 
             req.remote_addr.c_str(), user.c_str(), path.c_str(), 
@@ -708,6 +719,7 @@ void CommandHandler::fileUpload()
         res_body["msg"] = msg;
         res_body["next"] = next;
 
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         LogC::log_printf("%s user %s upload %s %d: %s\n", 
             req.remote_addr.c_str(), user.c_str(), md5.c_str(), 
@@ -782,14 +794,8 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::routeTest()
 {
-    server_.Get("/list", [&](const Request& req, Response& res) {
-        auto user = "demo";
-        auto path = "/";
-        int count = 1;
-        vector<json> files;
-        generateFileTree({user, path}, count, files);
-        cout << "final json tree" << endl;
-        cout << files << endl;
-
+    server_.Get("/", [&](const Request& req, Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content("Hello World!", "text/plain");
     });
 }
