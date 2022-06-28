@@ -14,6 +14,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "file_system_manager.h"
 #include "httplib.h"
@@ -314,6 +315,43 @@ std::string CommandHandler::verify_token(const httplib::Request& req) const
     }
 }
 
+// 递归生成文件树
+int CommandHandler::generateFileTree(std::string path, int& count, vector<json>& files)
+{
+    int _ret;
+    vector<FNode> list;
+    _ret = file_system_manager().list(path, list);
+    if (_ret == 0) {
+        for (const auto& f : list) {
+            json file;
+            file["name"] = f.name;
+            file["type"] = "folder";
+            file["size"] = 0;
+            if (f.is_file) {
+                file["type"] = "file";
+                file["size"] = f.file_size;
+            }
+
+            // 设置时间
+            char buf[32]{};
+            strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", 
+                localtime(&(f.modufy_time)));
+
+            file["time"] = std::string(buf);
+            file["id"] = count++;
+            
+            if (!f.is_file) {
+                vector<json> _files;
+                generateFileTree(path_join({path, f.name}), count, _files);
+                file["children"] = _files;
+            }
+            files.push_back(file);
+        }
+    }
+
+    return _ret;
+}
+
 /* 文件列表 */
 void CommandHandler::fileList()
 {
@@ -326,38 +364,17 @@ void CommandHandler::fileList()
 
         try {
             user = verify_token(req);
-            // user = "demo";
             // 获取到绝对路径目录
             auto path = req_body.at("path");
 
             // 获取目录下的文件信息
             int _ret;
-            vector<FNode> list;
-            _ret = file_system_manager().list(path_join(user, {path}), list);
-            if (_ret == 0) {
-                for (const auto& f : list) {
-                    json file;
-                    file["name"] = f.name;
-                    file["type"] = "folder";
-                    file["size"] = 0;
-                    if (f.is_file) {
-                        file["type"] = "file";
-                        file["size"] = f.file_size;
-                    }
-
-                    // 设置时间
-                    char buf[32]{};
-                    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", 
-                        localtime(&(f.modufy_time)));
-
-                    file["time"] = std::string(buf);
-                    files.push_back(file);
-                }
-            } else {
+            int count = 1;
+            _ret = generateFileTree(path_join(user, {path}), count, files);
+            if (_ret != 0) {
                 ret = -1;
                 msg = file_system_manager().error(_ret);
             }
-
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -370,7 +387,6 @@ void CommandHandler::fileList()
             msg = "invalid login";
         }
 
-        
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
@@ -643,16 +659,14 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::routeTest()
 {
-    server_.Get("/chunked", [&](const Request& req, Response& res) {
-    res.set_chunked_content_provider(
-        "text/plain",
-        [](size_t offset, DataSink &sink) {
-        sink.write("123", 3);
-        sink.write("345", 3);
-        sink.write("789", 3);
-        sink.done(); // No more data
-        return true; // return 'false' if you want to cancel the process.
-        }
-    );
+    server_.Get("/list", [&](const Request& req, Response& res) {
+        auto user = "demo";
+        auto path = "/";
+        int count = 1;
+        vector<json> files;
+        generateFileTree({user, path}, count, files);
+        cout << "final json tree" << endl;
+        cout << files << endl;
+
     });
 }

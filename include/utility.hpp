@@ -9,7 +9,7 @@
 #include "file_system_manager.h"
 
 // 数据库是否初始化
-#define __DATABASE_INIT__
+// #define __DATABASE_INIT__
 
 // 数据库配置
 // 首先需要创建数据库 disk
@@ -28,5 +28,6 @@ FileSystemManager& file_system_manager();
 // 路径拼接
 // std::string path_join(const std::string user, const std::string path);
 std::string path_join(const std::string user, const std::initializer_list<std::string>);
+std::string path_join(const std::initializer_list<std::string>);
 
 #endif

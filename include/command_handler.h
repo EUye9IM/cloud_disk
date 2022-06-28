@@ -6,6 +6,7 @@
 #define COMMAND_HANDLER_H
 
 /* 个人条件编译调试 */
+#include <vector>
 #define __ANAKIN_DEBUG__
 
 #include <string>
@@ -14,6 +15,7 @@
 #include "jwt-cpp/token.hpp"
 #include "user_info_manager.h"
 #include "file_system_manager.h"
+#include "json.hpp"
 
 #ifdef __ANAKIN_DEBUG__
 void CommandHandlerDebug();
@@ -46,6 +48,9 @@ protected:
     void fileDownload();
 
     void routeTest();
+
+    // 生成文件树
+    int generateFileTree(std::string path, int& count, std::vector<nlohmann::json>&);
 
     /* 初始化 UserInfoManager */
     int initUserManager();
