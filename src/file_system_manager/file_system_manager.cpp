@@ -337,9 +337,8 @@ int FileSystemManager::list(const std::string &folder_path,
 							std::vector<FNode> &fnode_list) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string recent_path;
-	static std::string regex_parm;
 	static MYSQL_STMT *stmt = nullptr;
-	static MYSQL_BIND in;
+	static MYSQL_BIND in[5];
 	static MYSQL_BIND out[4];
 	static FNode buf_node;
 
@@ -354,25 +353,38 @@ int FileSystemManager::list(const std::string &folder_path,
 		recent_path = folder_path + "/";
 	else
 		recent_path = folder_path;
-	regex_parm = "^" + recent_path + "[^/]+/$";
 	fnode_list.clear();
 
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(
 			stmt,
 			"SELECT path, node.hash, mtime, size FROM node LEFT JOIN file "
-			"ON node.hash = file.hash WHERE path REGEXP "
-			"? ORDER BY path",
+			"ON node.hash = file.hash WHERE SUBSTR(path,1,CHAR_LENGTH(?))=? "
+			"AND POSITION('/' in "
+			"SUBSTR(path,CHAR_LENGTH(?)+1))=CHAR_LENGTH(path)-CHAR_LENGTH(?) "
+			"AND path!=? ORDER BY path;",
 			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
 
-	memset(&in, 0, sizeof(in));
-	in.buffer_type = MYSQL_TYPE_STRING;
-	in.buffer = (void *)regex_parm.c_str();
-	in.buffer_length = regex_parm.length();
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)recent_path.c_str();
+	in[0].buffer_length = recent_path.length();
+	in[1].buffer_type = MYSQL_TYPE_STRING;
+	in[1].buffer = (void *)recent_path.c_str();
+	in[1].buffer_length = recent_path.length();
+	in[2].buffer_type = MYSQL_TYPE_STRING;
+	in[2].buffer = (void *)recent_path.c_str();
+	in[2].buffer_length = recent_path.length();
+	in[3].buffer_type = MYSQL_TYPE_STRING;
+	in[3].buffer = (void *)recent_path.c_str();
+	in[3].buffer_length = recent_path.length();
+	in[4].buffer_type = MYSQL_TYPE_STRING;
+	in[4].buffer = (void *)recent_path.c_str();
+	in[4].buffer_length = recent_path.length();
 
 	memset(out, 0, sizeof(out));
 	out[0].buffer_type = MYSQL_TYPE_STRING;
@@ -386,7 +398,7 @@ int FileSystemManager::list(const std::string &folder_path,
 	out[3].buffer_type = MYSQL_TYPE_LONGLONG;
 	out[3].buffer = (void *)&buffer_size;
 
-	if (mysql_stmt_bind_param(stmt, &in)) {
+	if (mysql_stmt_bind_param(stmt, in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -419,7 +431,106 @@ int FileSystemManager::list(const std::string &folder_path,
 
 	return _RET_OK;
 }
+int FileSystemManager::remove(
+	const std::string &path,
+	std::vector<std::string> &should_be_removed_hashes) {
+	static std::string recent_path;
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in[2];
+	static MYSQL_BIND out;
+	static char buffer_hash[HASH_LEN];
 
+	if (path.length() < 2 || path[0] != '/')
+		return _RET_BAD_PATH;
+	if (path.back() != '/')
+		recent_path = path + "/";
+	else
+		recent_path = path;
+
+	should_be_removed_hashes.clear();
+	TransactionGuard transaction(sql);
+	if (transaction.status == transaction.bad) {
+		_mysql_error_msg = mysql_error(sql);
+		return _RET_SQL_ERR;
+	}
+	// remove
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt, "DELETE FROM node WHERE SUBSTR(path,1,CHAR_LENGTH(?))=?;", -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)recent_path.c_str();
+	in[0].buffer_length = recent_path.length();
+	in[1].buffer_type = MYSQL_TYPE_STRING;
+	in[1].buffer = (void *)recent_path.c_str();
+	in[1].buffer_length = recent_path.length();
+
+	if (mysql_stmt_bind_param(stmt, in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+
+	// list
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT hash FROM file WHERE hash NOT IN(SELECT "
+						   "DISTINCT hash FROM node WHERE hash IS NOT NULL);",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_STRING;
+	out.buffer = (void *)buffer_hash;
+	out.buffer_length = sizeof(buffer_hash);
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	while (!mysql_stmt_fetch(stmt)) {
+		should_be_removed_hashes.push_back(std::string(buffer_hash));
+	}
+	mysql_stmt_close(stmt);
+
+	// delete
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt,
+						   "DELETE FROM file WHERE hash NOT IN(SELECT DISTINCT "
+						   "hash FROM node WHERE hash IS NOT NULL);",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+	transaction.status = transaction.commit;
+	return _RET_OK;
+}
 int FileSystemManager::getHash(const std::string &path, std::string &hash) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string recent_path;
