@@ -362,6 +362,14 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
 /* 文件列表 */
 void CommandHandler::fileList()
 {
+    server_.Options("/api/file/list", [this](const Request& req, Response& res){
+        res.status = 204;
+        res.reason = "No Content";
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Headers", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+    });
+
     server_.Post("/api/file/list", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -817,14 +825,8 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::routeTest()
 {
-    server_.Get("/list", [&](const Request& req, Response& res) {
-        auto user = "demo";
-        auto path = "/";
-        int count = 1;
-        vector<json> files;
-        generateFileTree({user, path}, count, files);
-        cout << "final json tree" << endl;
-        cout << files << endl;
-
+    server_.Get("/", [&](const Request& req, Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content("Hello World!", "text/plain");
     });
 }

@@ -21,7 +21,7 @@ static SqlConfig sql_config = {
     .user = "root",
     .pass = "root123",
     .database_name = "disk",
-    .charset = "UTF-8",
+    .charset = "GBK",
 };
 
 // 获取 FileSystemManager 的单例模式
