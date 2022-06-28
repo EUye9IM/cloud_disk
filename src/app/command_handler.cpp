@@ -204,8 +204,8 @@ void CommandHandler::userSignup()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         // 日志记录注册信息
         LogC::log_printf("%s signup: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
@@ -241,8 +241,8 @@ void CommandHandler::userLogout()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         // 日志记录登出信息
         LogC::log_printf("%s logout: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
@@ -296,8 +296,8 @@ void CommandHandler::userChangepass()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         // 日志记录登录信息
         LogC::log_printf("%s changepass: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
@@ -399,8 +399,8 @@ void CommandHandler::fileList()
         res_body["msg"] = msg;
         res_body["files"] = files;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         LogC::log_printf("%s user %s list %s\n",
             req.remote_addr.c_str(), user.c_str(), msg.c_str());
     });
@@ -444,8 +444,8 @@ void CommandHandler::fileNewFolder()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
         LogC::log_printf("%s user %s mkdir %s: %s\n",
             req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
     });
@@ -485,8 +485,8 @@ void CommandHandler::fileRename()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
     });
 
 }
@@ -525,8 +525,8 @@ void CommandHandler::fileDelete()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
     });
 
 }
