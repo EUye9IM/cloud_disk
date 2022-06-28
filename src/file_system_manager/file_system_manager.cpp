@@ -455,7 +455,9 @@ int FileSystemManager::remove(
 	}
 	// remove
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "DELETE FROM node WHERE SUBSTR(path,1,CHAR_LENGTH(?))=?;", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "DELETE FROM node WHERE SUBSTR(path,1,CHAR_LENGTH(?))=?;",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -531,13 +533,17 @@ int FileSystemManager::remove(
 	transaction.status = transaction.commit;
 	return _RET_OK;
 }
-int FileSystemManager::getHash(const std::string &path, std::string &hash) {
+int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string recent_path;
 	static MYSQL_STMT *stmt = nullptr;
 	static MYSQL_BIND in;
-	static MYSQL_BIND out;
+	static MYSQL_BIND out[4];
 	static char buffer_hash[HASH_LEN];
+	static char buffer_name[PATH_LEN];
+	static time_t buffer_mtime;
+	static long long buffer_size;
+	static size_t pos1, pos2;
 
 	if (path.length() < 2 || path[0] != '/')
 		return _RET_BAD_PATH;
@@ -546,9 +552,11 @@ int FileSystemManager::getHash(const std::string &path, std::string &hash) {
 	else
 		recent_path = path;
 
-	// find father
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ?;", -1)) {
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT path, node.hash, mtime, size FROM node LEFT "
+						   "JOIN file ON node.hash = file.hash WHERE path = ?;",
+						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -559,17 +567,24 @@ int FileSystemManager::getHash(const std::string &path, std::string &hash) {
 	in.buffer = (void *)recent_path.c_str();
 	in.buffer_length = recent_path.length();
 
-	memset(&out, 0, sizeof(out));
-	out.buffer_type = MYSQL_TYPE_STRING;
-	out.buffer = (void *)buffer_hash;
-	out.buffer_length = sizeof(buffer_hash);
+	memset(out, 0, sizeof(out));
+	out[0].buffer_type = MYSQL_TYPE_STRING;
+	out[0].buffer = (void *)buffer_name;
+	out[0].buffer_length = sizeof(buffer_name);
+	out[1].buffer_type = MYSQL_TYPE_STRING;
+	out[1].buffer = (void *)buffer_hash;
+	out[1].buffer_length = sizeof(buffer_hash);
+	out[2].buffer_type = MYSQL_TYPE_LONG;
+	out[2].buffer = (void *)&buffer_mtime;
+	out[3].buffer_type = MYSQL_TYPE_LONGLONG;
+	out[3].buffer = (void *)&buffer_size;
 
 	if (mysql_stmt_bind_param(stmt, &in)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	if (mysql_stmt_bind_result(stmt, &out)) {
+	if (mysql_stmt_bind_result(stmt, out)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -585,7 +600,15 @@ int FileSystemManager::getHash(const std::string &path, std::string &hash) {
 		return _RET_SQL_ERR;
 	}
 	mysql_stmt_close(stmt);
-	hash = buffer_hash;
+	file.name = buffer_name;
+	file.is_file = (buffer_hash[0] != 0);
+	file.file_hash = buffer_hash;
+	file.modufy_time = buffer_mtime;
+	file.file_size = buffer_size;
+
+	pos1 = file.name.find_last_of('/');
+	pos2 = file.name.find_last_of('/', pos1 - 1);
+	file.name = file.name.substr(pos2 + 1, pos1 - pos2 - 1);
 	return _RET_OK;
 }
 int FileSystemManager::initDatabase() {
