@@ -415,7 +415,7 @@ int FileSystemManager::list(const std::string &folder_path,
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
 	}
-	memset(buffer_hash,0,sizeof(buffer_hash));
+	memset(buffer_hash, 0, sizeof(buffer_hash));
 	while (!mysql_stmt_fetch(stmt)) {
 		static size_t pos1, pos2;
 		buf_node.name = buffer_path;
@@ -695,6 +695,8 @@ const char *FileSystemManager::error(int error_no) {
 		return "file or file folder exist";
 	case _RET_NO_EXIST:
 		return "file or file folder does not exist";
+	case _RET_RECUR:
+		return "recursive copy/move";
 	default:
 		return "unknown error";
 	}
@@ -840,11 +842,14 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 		mysql_stmt_close(stmt);
 		// parent exist
 		//	parent is_file
-		if(buffer_hash[0]!='\0'){
+		if (buffer_hash[0] != '\0') {
 			return _RET_BAD_PATH;
 		}
-		to_name = getSelf(from_path)+"/";
-		return _RET_OK;
+		to_name = getSelf(from_path) + "/";
+
+		if (from_path != to_par.substr(0, from_path.length()))
+			return _RET_OK;
+		return _RET_RECUR;
 	}
 
 	if (mysql_stmt_errno(stmt) != 0) {
@@ -862,7 +867,9 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 
 	//     if parent dir not exist
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ? AND hash is NULL;", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "SELECT hash FROM node WHERE path = ? AND hash is NULL;",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -898,7 +905,9 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 		mysql_stmt_close(stmt);
 		// parent exist
 		//	parent is_dir
-		return _RET_OK;
+		if (from_path != to_par.substr(0, from_path.length()))
+			return _RET_OK;
+		return _RET_RECUR;
 	}
 	// parent not exist
 
