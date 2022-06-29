@@ -16,6 +16,7 @@
 #include <mutex>
 #include <string>
 #include <system_error>
+#include <valarray>
 #include <vector>
 
 #include "access_queue.h"
@@ -888,25 +889,25 @@ void CommandHandler::fileUpload()
  * 生成 http Content-Range 字段
  * -1 表示未知
  **/
-static std::string make_content_range(
-    const long long start=-1, const long long end=-1, const long long size=-1, 
-    const std::string unit="bytes"
-) {
-    std::string field = unit + ' ';
-    if (start == -1 || end == -1) {
-        field += "*";
-    } else {
-        field += std::to_string(start) + '-' + std::to_string(end);
-    }
+// static std::string make_content_range(
+//     const long long start=-1, const long long end=-1, const long long size=-1, 
+//     const std::string unit="bytes"
+// ) {
+//     std::string field = unit + ' ';
+//     if (start == -1 || end == -1) {
+//         field += "*";
+//     } else {
+//         field += std::to_string(start) + '-' + std::to_string(end);
+//     }
 
-    if (size == -1) {
-        field += "/*";
-    } else {
-        field += '/' + std::to_string(size);
-    }
+//     if (size == -1) {
+//         field += "/*";
+//     } else {
+//         field += '/' + std::to_string(size);
+//     }
 
-    return field;
-}
+//     return field;
+// }
 
 // 文件预下载
 void CommandHandler::filePreDownload()
@@ -968,10 +969,13 @@ void CommandHandler::mountDisk()
     server_.set_mount_point("/download", ROOT_PATH);
     server_.set_file_request_handler([this](const Request &req, Response &res) {
         try {
+            std::string file_md5 = req.path.substr(string("/download/").length());
+            
             auto user = verify_token(req);
-            /// TODO: 需要一些判断
-            LogC::log_printf("%s user %s download.\n", 
-                req.remote_addr.c_str(), user.c_str());
+            // string user = "demo";
+            LogC::log_printf("%s user %s download file %s %lld bytes\n", 
+                req.remote_addr.c_str(), user.c_str(), 
+                file_md5.c_str(), res.body.length());
             
         }
         catch (const json::exception& e) {
