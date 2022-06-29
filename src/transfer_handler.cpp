@@ -84,8 +84,9 @@ int TransferHandler::fillFileContent(std::string fpath,int begin,int size,void* 
 }
 
 std::string TransferHandler::hashToFPath(std::string hash){
+    return "";
 
 }
 std::string TransferHandler::pathToFPath(std::string path){
-
+    return "";
 }

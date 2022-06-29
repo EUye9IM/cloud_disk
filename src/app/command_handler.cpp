@@ -492,17 +492,27 @@ void CommandHandler::fileRename()
         std::string msg = "rename success";
 
         try {
-            verify_token(req);
+            auto user = verify_token(req);
             // 获取到绝对路径目录
             auto cwd = req_body.at("cwd");
             auto old_name = req_body.at("oldname");
             auto new_name = req_body.at("newname");
 
             /// @TODO: 文件改名
-            // 服务端实现方式，先添加新的文件后删除原文件
-            
-
-            
+            int _ret = file_system_manager().move(
+                path_join(user, {cwd, old_name}),
+                path_join(user, {cwd, new_name})
+            );
+            // 改名失败
+            if (_ret != 0) {
+                ret = -1;
+                msg = file_system_manager().error(_ret);
+            }
+            // 日志记录
+            LogC::log_printf("%s user %s rename %s to %s in %s: %s\n",
+                req.remote_addr.c_str(), user.c_str(), 
+                string(old_name).c_str(), string(new_name).c_str(),
+                string(cwd).c_str(), msg.c_str());
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -514,7 +524,6 @@ void CommandHandler::fileRename()
             ret = -2;
             msg = "invalid login";
         }
-
         
         json res_body;
         res_body["ret"] = ret;
@@ -523,7 +532,6 @@ void CommandHandler::fileRename()
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
-
 }
 
 void CommandHandler::fileDelete()
@@ -605,10 +613,17 @@ void CommandHandler::fileCopy()
                     path_join(user, {old_cwd, f}),
                     path_join(user, {new_cwd})
                 );
+
+                // 日志记录
+                LogC::log_printf("%s user %s copy %s from %s to %s: %s\n", 
+                    req.remote_addr.c_str(), user.c_str(), string(f).c_str(),
+                    old_cwd.c_str(), new_cwd.c_str(), 
+                    file_system_manager().error(_ret));
+
                 // 如果出现错误，则停止复制，但之前操作不回滚
                 if (_ret != 0) {
                     ret = -1;
-                    msg = file_system_manager().error(ret);
+                    msg = file_system_manager().error(_ret);
                     break;
                 }
             }
@@ -631,10 +646,7 @@ void CommandHandler::fileCopy()
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
         
-        // 日志记录
-        LogC::log_printf("%s user %s copy from %s to %s: %s\n", 
-            req.remote_addr.c_str(), user.c_str(), old_cwd.c_str(), 
-            new_cwd.c_str(), msg.c_str());
+
     });
 
 }
@@ -662,13 +674,19 @@ void CommandHandler::fileMove()
                     path_join(user, {old_cwd, f}),
                     path_join(user, {new_cwd})
                 );
+                
+                // 日志记录
+                LogC::log_printf("%s user %s move %s from %s to %s: %s\n", 
+                    req.remote_addr.c_str(), user.c_str(), string(f).c_str(),
+                    old_cwd.c_str(), new_cwd.c_str(), 
+                    file_system_manager().error(_ret));
+                
                 if (_ret != 0) {
                     ret = -1;
                     msg = file_system_manager().error(_ret);
                     break;
                 }
             }
-            
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -688,10 +706,7 @@ void CommandHandler::fileMove()
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
-        // 日志记录
-        LogC::log_printf("%s user %s move from %s to %s: %s\n", 
-            req.remote_addr.c_str(), user.c_str(), old_cwd.c_str(), 
-            new_cwd.c_str(), msg.c_str());
+
     });
 
 }
