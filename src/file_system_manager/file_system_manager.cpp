@@ -1053,7 +1053,7 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(stmt,
 						   "SELECT hash FROM node WHERE path = CONVERT(? USING "
-						   "'gbk')quit AND hash is NULL;",
+						   "'gbk') AND hash is NULL;",
 						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
