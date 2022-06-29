@@ -22,18 +22,6 @@ FileSystemManager& file_system_manager()
     return fsm;
 }
 
-// 路径拼接
-// std::string path_join(const std::string user, const std::string path)
-// {
-//     std::string new_path = '/' + user;
-//     if (path[0] == '/') {
-//         new_path += path;
-//     } else {
-//         new_path += '/' + path;
-//     }
-//     return new_path;
-// }
-
 std::string path_join(
     const std::string user, 
     const std::initializer_list<std::string> paths)

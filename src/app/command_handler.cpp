@@ -802,9 +802,8 @@ void CommandHandler::fileUpload()
             md5 = req_body.at("md5");
             auto data = req_body.at("data");
             num = req_body.at("num");
-            /// TODO: 写入信息
-
-            next = AccessQueue::Instance().getTask(md5, num);
+            // 写入信息，获取下一任务
+            next = AccessQueue::Instance().getTask(md5, num, data);
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';

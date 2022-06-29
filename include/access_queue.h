@@ -13,8 +13,8 @@
 #include <string>
 #include <vector>
 
-#define configMAX_ACCESS_QUEUE 1024
-#define configFILE_SLICE_SIZE 1024 //单位KiB
+// #define configMAX_ACCESS_QUEUE 1024
+// #define configFILE_SLICE_SIZE 1024 //单位KiB
 
 // 放置临时文件的文件夹
 const std::string TEMP = "./temp/";
@@ -27,7 +27,8 @@ using size_q = long long;
 
 class AccessQueue{
 public:
-    static const int FILE_SLICE_SIZE = 1024 * 1024; // 1M
+    // static const int FILE_SLICE_SIZE = 1024 * 1024; // 1M
+    static const int FILE_SLICE_SIZE = 2; // 1M
     explicit AccessQueue() = default;
     ~AccessQueue();
 
@@ -56,25 +57,12 @@ public:
     // 启动一个文件上传队列，传入文件路径、md5和大小，大小以byte计数
     // 返回 0 表示成功，返回负数表示失败
     int startFileQueue(std::string path, std::string file_md5, size_q file_size);
-    // 从队列中获取任务，传入文件路径和当前收到切片序号，返回分配的任务序号
-    size_q getTask(std::string file_md5, size_q current_num=0);
-
-    /* 
-    * 启动Access Queue线程
-    * maxQueueAmount指定了服务器最大可同时接收的文件数量
-    * fileSliceSize指定了文件传输切片的大小，单位为KiB
-    */
-    // void startAccessQueue(int maxQueueAmount=configMAX_ACCESS_QUEUE,int fileSliceSize=configFILE_SLICE_SIZE);
-
-    /*
-    * 从访问队列中获得任务
-    * sumCheck指定了
-    */
-    // int getTask(char* sumCheck);
+    // 从队列中获取任务，传入文件路径和当前收到切片序号以及数据
+    // 返回分配的任务序号，0 代表文件传输完成
+    size_q getTask(const std::string file_md5, const size_q current_num=0, 
+        const std::string data="");
 
 private:
-    // 存储文件路径与文件md5的信息，不需要每次查询数据库
-    // std::map<std::string, std::string> files_;
     // 存储文件md5与文件上传情况
     std::map<std::string, FileUploadInfo> upload_;
     // std::mutex m_files_;    // files_加锁

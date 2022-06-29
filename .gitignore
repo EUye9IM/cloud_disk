@@ -2,6 +2,7 @@
 /build
 /file
 upload.sh
+DISK/
 
 *.o
 

@@ -94,3 +94,10 @@ std::string TransferHandler::pathToFPath(std::string path){
     toRet.append(fn.file_hash);
     return toRet;
 }
+
+// 获取到单例
+TransferHandler& TransferHandler::Instance()
+{
+    static TransferHandler ts(ROOT_PATH);
+    return ts;
+}

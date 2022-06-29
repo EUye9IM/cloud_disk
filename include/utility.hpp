@@ -25,16 +25,19 @@ static SqlConfig sql_config = {
     .charset = "GBK",
 };
 
+// 实际文件的存储位置
+const std::string ROOT_PATH = "./DISK";
+
 // 无用函数，防止警告
 inline void unused_variable() {
     UNUSED_VARIABLE(sql_config);
+    UNUSED_VARIABLE(ROOT_PATH);
 }
 
 // 获取 FileSystemManager 的单例模式
 FileSystemManager& file_system_manager();
 
 // 路径拼接
-// std::string path_join(const std::string user, const std::string path);
 std::string path_join(const std::string user, const std::initializer_list<std::string>);
 std::string path_join(const std::initializer_list<std::string>);
 
