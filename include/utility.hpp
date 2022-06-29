@@ -22,7 +22,7 @@ static SqlConfig sql_config = {
     .user = "root",
     .pass = "root123",
     .database_name = "disk",
-    .charset = "GBK",
+    .charset = "utf8",
 };
 
 // 实际文件的存储位置

@@ -48,7 +48,7 @@ protected:
     void fileDelete();
     void fileCopy();
     void fileMove();
-    void fileDownload();
+    void filePreDownload();
     void filePreUpload();
     void fileUpload();
 

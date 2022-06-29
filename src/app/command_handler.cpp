@@ -131,7 +131,7 @@ void CommandHandler::fileRouterConfigure()
     fileDelete();
     fileCopy();
     fileMove();
-    fileDownload();
+    filePreDownload();
     filePreUpload();
     fileUpload();
 }
@@ -908,31 +908,35 @@ static std::string make_content_range(
     return field;
 }
 
-// 文件下载
-void CommandHandler::fileDownload()
+// 文件预下载
+void CommandHandler::filePreDownload()
 {
-    resolveCORS("/api/download");
-    server_.Post("/api/download", [this](const Request& req, Response& res) {
+    resolveCORS("/api/predownload");
+    server_.Post("/api/predownload", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
-        // 创建一个未知大小Content-Range
-        auto content_range = make_content_range();
+        int ret = 0;
+        std::string msg = "predownload success";
+        std::string url{};
         
         try {
-            // verify_token(req);
+            auto user = verify_token(req);
             // 获取下载文件等信息
-            auto method = req_body.at("method");
-            auto path = req_body.at("path");
-            auto offset = req_body.at("offset");
+            std::string path = req_body.at("path");
+            FNode f;
+            int _ret = file_system_manager().getFile(
+                path_join(user, {path}), f
+            );
 
-            /// TODO: 取出用户 path offset 的文件信息
-            auto size = 100;
-            std::string res_body = "filebody";
-            auto length = res_body.length();
+            if (_ret == 0) {
+                // 查询成功
+                url = "/download/" + f.file_hash;
+            } else {
+                ret = -1;
+                msg = file_system_manager().error(_ret);
+            }
+            LogC::log_printf("%s user %s predownload %s get url: %s\n", 
+                req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
             
-            // 设置 type/range/length 字段
-            content_range = make_content_range(offset, length, size);
-            // 放置 body 数据内容
-            res.set_content(res_body, "application/octet-stream");
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -940,9 +944,14 @@ void CommandHandler::fileDownload()
         catch (const Anakin::token_exception& e) {
             cout << e.what() << '\n';
         }
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+        res_body["url"] = url;
 
-        // 设置Content-Range
-        res.set_header("Content-Range", content_range);
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(res_body.dump(), "application/json");
     });
 
 }
@@ -958,11 +967,21 @@ void CommandHandler::mountDisk()
     }
     server_.set_mount_point("/download", ROOT_PATH);
     server_.set_file_request_handler([this](const Request &req, Response &res) {
-        auto user = verify_token(req);
+        try {
+            auto user = verify_token(req);
+            /// TODO: 需要一些判断
+            LogC::log_printf("%s user %s download.\n", 
+                req.remote_addr.c_str(), user.c_str());
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+        }
 
     });
-    
-
 }
 
 

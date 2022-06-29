@@ -9,6 +9,7 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include "logc/logc.h"
 #include "utility.hpp"
 #include "transfer_handler.h"
 
@@ -146,9 +147,11 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
         next_task = 0;
         // 写入用户文件系统
         for (const auto& path : file->second.files_) {
-            file_system_manager().makeFile(
+            int _ret = file_system_manager().makeFile(
                 path, file_md5, file->second.file_size_
             );
+            LogC::log_printf("make file %s: %s\n",
+                path.c_str(), file_system_manager().error(_ret));
         }
         // 释放空间
         file->second.files_.clear();
