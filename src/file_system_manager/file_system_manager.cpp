@@ -439,15 +439,12 @@ int FileSystemManager::move(const std::string &old_path,
 							const std::string &new_path) {
 	std::lock_guard<std::mutex> lock(_lock);
 	static std::string parent_path, the_old_path, name_path;
-	// static MYSQL_STMT *stmt = nullptr;
-	// static MYSQL_BIND in[3];
-	// static MYSQL_BIND out;
-	// static std::time_t mtime;
-	// static char buffer_hash[HASH_LEN];
-	// static int num;
-	if (old_path.length() < 2 || old_path[0] != '/')
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in[5];
+	static std::time_t mtime;
+	if (old_path.length() < 1 || old_path[0] != '/')
 		return _RET_BAD_PATH;
-	if (new_path.length() < 2 || new_path[0] != '/')
+	if (new_path.length() < 1 || new_path[0] != '/')
 		return _RET_BAD_PATH;
 	if (old_path.back() != '/')
 		the_old_path = old_path + "/";
@@ -467,10 +464,53 @@ int FileSystemManager::move(const std::string &old_path,
 	int ret = this->_checkMovePath(the_old_path, parent_path, name_path);
 	if (ret != _RET_OK)
 		return ret;
+	parent_path += name_path;
 
-	printf("%s -> %s %s\n", the_old_path.c_str(), parent_path.c_str(),
-		   name_path.c_str());
+	mtime = std::time(nullptr);
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt,
+						   "UPDATE node SET mtime = ?,path = "
+						   "CONCAT(?,SUBSTR(path,CHAR_LENGTH(?)+1)) where "
+						   "SUBSTR(path,1,CHAR_LENGTH(?))=?;",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	// TODO
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_LONG;
+	in[0].buffer = (void *)&mtime;
+	in[1].buffer_type = MYSQL_TYPE_STRING;
+	in[1].buffer = (void *)parent_path.c_str();
+	in[1].buffer_length = parent_path.length();
+	in[2].buffer_type = MYSQL_TYPE_STRING;
+	in[2].buffer = (void *)the_old_path.c_str();
+	in[2].buffer_length = the_old_path.length();
+	in[3].buffer_type = MYSQL_TYPE_STRING;
+	in[3].buffer = (void *)the_old_path.c_str();
+	in[3].buffer_length = the_old_path.length();
+	in[4].buffer_type = MYSQL_TYPE_STRING;
+	in[4].buffer = (void *)the_old_path.c_str();
+	in[4].buffer_length = the_old_path.length();
 
+	if (mysql_stmt_bind_param(stmt, in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	mysql_stmt_close(stmt);
+
+	ret = this->_updateModifyTime(parent_path, mtime);
+	if (ret != _RET_OK)
+		return ret;
+
+	transaction.status = transaction.commit;
 	return _RET_OK;
 }
 int FileSystemManager::remove(
