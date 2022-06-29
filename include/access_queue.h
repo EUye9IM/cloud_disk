@@ -27,8 +27,8 @@ using size_q = long long;
 
 class AccessQueue{
 public:
-    // static const int FILE_SLICE_SIZE = 1024 * 1024; // 1M
-    static const int FILE_SLICE_SIZE = 2; // 1M
+    static const int FILE_SLICE_SIZE = 1024 * 1024; // 1M
+    // static const int FILE_SLICE_SIZE = 2; // 测试
     explicit AccessQueue() = default;
     ~AccessQueue();
 

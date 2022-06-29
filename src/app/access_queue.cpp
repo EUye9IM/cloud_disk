@@ -30,7 +30,6 @@ int AccessQueue::startFileQueue(
     if (upload_.find(file_md5) == upload_.end()) {
         // 不在上传队列，创建
         size_q slice_num = (file_size + FILE_SLICE_SIZE - 1) / FILE_SLICE_SIZE;
-        cout << "slice num: " << slice_num << endl;
 
         FileUploadInfo file_info = {
             1, 0, slice_num,
@@ -77,6 +76,8 @@ size_q AccessQueue::getTask(const std::string file_md5, const
 
     // 检验是否正确，不正确直接重新上传
     do {
+        if (current_num == 0)
+            break;
         if (current_num < file->second.slice_num_ &&
             data.length() == AccessQueue::FILE_SLICE_SIZE) {
             break;
@@ -86,12 +87,14 @@ size_q AccessQueue::getTask(const std::string file_md5, const
         if (final_slice_len == 0)
             final_slice_len = AccessQueue::FILE_SLICE_SIZE;
         
+        cout << "final slice len:" << final_slice_len << endl;
         if (current_num == file->second.slice_num_ &&
             static_cast<size_q>(data.length()) == final_slice_len) {
             break;
         }
 
         // 没有通过检验，返回未完成的最小序号
+        cout << "min unfinish num: " << file->second.min_unfinish_num_ << endl;
         return file->second.min_unfinish_num_;
     } while (true);
     
@@ -120,7 +123,7 @@ size_q AccessQueue::getTask(const std::string file_md5, const
 
     size_q next_task = 0;   // 接下来需要上传的切片
     // 还有未分配的文件切片
-    if (file->second.max_allocate_num_ <= file->second.slice_num_) {
+    if (file->second.max_allocate_num_ < file->second.slice_num_) {
         next_task = ++file->second.max_allocate_num_;
     }
     // 已经全部分配，使用最小的未完成的序号
