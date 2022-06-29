@@ -27,7 +27,6 @@ std::string pathToFPath(std::string path);
 
 private:
 std::string _rootPath;
-//FileSystemManager& _fs;
 
 };
 

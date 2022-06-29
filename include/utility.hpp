@@ -7,6 +7,7 @@
 #include <string>
 #include <initializer_list>
 #include "file_system_manager.h"
+#include "sql_config.h"
 
 // 数据库是否初始化
 // #define __DATABASE_INIT__
@@ -23,6 +24,11 @@ static SqlConfig sql_config = {
     .database_name = "disk",
     .charset = "GBK",
 };
+
+// 无用函数，防止警告
+inline void unused_variable() {
+    UNUSED_VARIABLE(sql_config);
+}
 
 // 获取 FileSystemManager 的单例模式
 FileSystemManager& file_system_manager();

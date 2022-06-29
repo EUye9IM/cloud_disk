@@ -17,9 +17,6 @@ AccessQueue::~AccessQueue()
     // 清空 map 空间
     // files_.clear();
     upload_.clear();
-
-    // 处理无用变量
-    UNUSED_VARIABLE(sql_config);
 }
 
 // 启动一个文件上传队列
