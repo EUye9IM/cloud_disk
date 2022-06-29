@@ -213,18 +213,20 @@ return
 #### 文件正式上传
 下面是文件的正式上传部分，注意文件上传时客户端应该获取到权限，不允许修改文件
 ```
-post /api/file/upload
+post /api/file/upload?md5=xxx&num=(\d+)
+md5: <file md5>
+num: 块数序号（从1计数）
+
 send
 {
-    md5: <file md5>
-    data: 数据    // 文件数据
-    num: 块数序号（从1计数）
+    数据    // 文件数据
 }
 return 
 {
     "ret": 0/-1/-2     --- 成功/失败/token非法
     "msg": 提示信息
     "next": 下一块切片号 --- 0 表示完成
+    "count": 服务端收到的有效切片数
 }
 
 ```
@@ -267,13 +269,14 @@ TODO: 目前下载采用http自带断点续传功能，但因为服务端并没�
 post /api/download
 send
 {
-    "method": "download",
     "path": <path/to/file>,    
     "offset": <offset in byte> // 从第几字节开始
+    "length": 数据长度（需要合法）
 }
 return 
+token失效使用状态码404来表示
 {
-    通过http的相应首部的 Content-Type/Content-Range/Content-Length三个字段回复，body中放置裸二进制数据
+    数据
 }
 
 问题：如果下载文件时服务端文件发生变化，此时已下载内容受损，所以考虑添加Last-Modified字段

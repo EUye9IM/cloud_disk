@@ -63,8 +63,8 @@ int AccessQueue::startFileQueue(
     return 0;
 }
 
-size_q AccessQueue::getTask(const std::string file_md5, const 
-                            size_q current_num, const std::string data)
+size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
+            const size_q current_num, const std::string data)
 {
     lock_guard<mutex> lock(m_upload_);
     
@@ -119,6 +119,14 @@ size_q AccessQueue::getTask(const std::string file_md5, const
             num++;
         }
         file->second.min_unfinish_num_ = num;
+        // 获取完成数目
+        count = num -1;
+        auto &s = file->second.status;
+        for (size_q i = num; i < static_cast<size_q>(s.length()); i++) {
+            if (s[i] == '1') {
+                count++;
+            }
+        }
     }
 
     size_q next_task = 0;   // 接下来需要上传的切片

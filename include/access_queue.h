@@ -59,8 +59,8 @@ public:
     int startFileQueue(std::string path, std::string file_md5, size_q file_size);
     // 从队列中获取任务，传入文件路径和当前收到切片序号以及数据
     // 返回分配的任务序号，0 代表文件传输完成
-    size_q getTask(const std::string file_md5, const size_q current_num=0, 
-        const std::string data="");
+    size_q getTask(const std::string file_md5, size_q& count,
+        const size_q current_num=0, const std::string data="");
 
 private:
     // 存储文件md5与文件上传情况
