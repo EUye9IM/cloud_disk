@@ -33,7 +33,7 @@ protected:
     /* 初始化服务器，绑定地址以及端口，并且配置路由，注意线程会阻塞 */
     int initServer(const std::string ip_address, const int port);
     /* 解决服务器跨域问题 */
-    void resolveCORS();
+    void resolveCORS(std::string);
     /* 用户相关路由设置 */
     void userRouterConfigure();
     void userLogin();

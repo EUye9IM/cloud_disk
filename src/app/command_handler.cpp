@@ -64,7 +64,7 @@ CommandHandler::~CommandHandler()
 int CommandHandler::initServer(const std::string ip_address, const int port)
 {
     /* CORS */
-    resolveCORS();
+    // resolveCORS();
     /* 用户相关路由设置 */
     userRouterConfigure();
     /* 文件路由 */
@@ -132,9 +132,9 @@ void CommandHandler::fileRouterConfigure()
 }
 
 /* 解决 CORS 问题 */
-void CommandHandler::resolveCORS()
+void CommandHandler::resolveCORS(std::string route)
 {
-    server_.Options("(./*)", [this](const Request& req, Response& res){
+    server_.Options(route, [this](const Request& req, Response& res){
         res.status = 204;
         res.reason = "No Content";
         res.set_header("Access-Control-Allow-Origin", "*");
@@ -146,15 +146,17 @@ void CommandHandler::resolveCORS()
 /* 用户登录 */
 void CommandHandler::userLogin()
 {
+    resolveCORS("/api/login");
     server_.Post("/api/login", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "login success";
-        std::string token;
+        std::string token, _user{};
 
         try {
             int _ret;
             auto user = req_body.at("user");
+            _user = user;
             auto password = req_body.at("password");
             
             // 数据库处理用户
@@ -185,14 +187,15 @@ void CommandHandler::userLogin()
         res.set_header("Access-Control-Allow-Origin", "*");
 
         // 日志记录登录信息
-        LogC::log_printf("%s login: %s\n", 
-                        req.remote_addr.c_str(), msg.c_str());
+        LogC::log_printf("%s user %s login: %s\n", 
+            req.remote_addr.c_str(), _user.c_str(), msg.c_str());
     });
 }
 
 /* 用户注册 */
 void CommandHandler::userSignup()
 {
+    resolveCORS("/api/signup");
     server_.Post("/api/signup", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -243,6 +246,7 @@ void CommandHandler::userSignup()
 /* 用户登出 */
 void CommandHandler::userLogout()
 {
+    resolveCORS("/api/logout");
     server_.Post("/api/logout", [](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -274,6 +278,7 @@ void CommandHandler::userLogout()
 /* 用户改密 */
 void CommandHandler::userChangepass()
 {
+    resolveCORS("/api/changepass");
     server_.Post("/api/changepass", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -384,25 +389,19 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
 /* 文件列表 */
 void CommandHandler::fileList()
 {
-    // server_.Options("/api/file/list", [this](const Request& req, Response& res){
-    //     res.status = 204;
-    //     res.reason = "No Content";
-    //     res.set_header("Access-Control-Allow-Origin", "*");
-    //     res.set_header("Access-Control-Allow-Headers", "*");
-    //     res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
-    // });
+    resolveCORS("/api/file/list");
 
     server_.Post("/api/file/list", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "list success";
         vector<json> files;
-        std::string user{};
+        std::string user{}, path;
 
         try {
             user = verify_token(req);
             // 获取到绝对路径目录
-            auto path = req_body.at("path");
+            path = req_body.at("path");
 
             // 获取目录下的文件信息
             int _ret;
@@ -431,14 +430,16 @@ void CommandHandler::fileList()
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
-        LogC::log_printf("%s user %s list %s\n",
-            req.remote_addr.c_str(), user.c_str(), msg.c_str());
+        LogC::log_printf("%s user %s list %s: %s\n",
+            req.remote_addr.c_str(), user.c_str(), 
+            path.c_str(), msg.c_str());
     });
 
 }
 
 void CommandHandler::fileNewFolder()
 {
+    resolveCORS("/api/file/newfolder");
     server_.Post("/api/file/newfolder", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -484,6 +485,7 @@ void CommandHandler::fileNewFolder()
 
 void CommandHandler::fileRename()
 {
+    resolveCORS("/api/file/rename");
     server_.Post("/api/file/rename", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -497,6 +499,9 @@ void CommandHandler::fileRename()
             auto new_name = req_body.at("newname");
 
             /// @TODO: 文件改名
+            // 服务端实现方式，先添加新的文件后删除原文件
+            
+
             
         }
         catch (const json::exception& e) {
@@ -523,6 +528,7 @@ void CommandHandler::fileRename()
 
 void CommandHandler::fileDelete()
 {
+    resolveCORS("/api/file/delete");
     server_.Post("/api/file/delete", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -578,6 +584,7 @@ void CommandHandler::fileDelete()
 
 void CommandHandler::fileCopy()
 {
+    resolveCORS("/api/file/copy");
     server_.Post("/api/file/copy", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -634,6 +641,7 @@ void CommandHandler::fileCopy()
 
 void CommandHandler::fileMove()
 {
+    resolveCORS("/api/file/move");
     server_.Post("/api/file/move", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         int ret = 0;
@@ -691,6 +699,7 @@ void CommandHandler::fileMove()
 // 文件预上传
 void CommandHandler::filePreUpload()
 {
+    resolveCORS("/api/file/preupload");
     server_.Post("/api/file/preupload", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         std::string user{}, path{};
@@ -765,6 +774,7 @@ void CommandHandler::filePreUpload()
 // 文件上传
 void CommandHandler::fileUpload()
 {
+    resolveCORS("/api/file/upload");
     server_.Post("/api/file/upload", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         std::string user{}, md5{};
@@ -803,7 +813,7 @@ void CommandHandler::fileUpload()
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
-        LogC::log_printf("%s user %s upload %s %d: %s\n", 
+        LogC::log_printf("%s user %s upload %s~%d: %s\n", 
             req.remote_addr.c_str(), user.c_str(), md5.c_str(), 
             num, msg.c_str());
     });
@@ -836,6 +846,7 @@ static std::string make_content_range(
 // 文件下载
 void CommandHandler::fileDownload()
 {
+    resolveCORS("/api/download");
     server_.Post("/api/download", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
         // 创建一个未知大小Content-Range
@@ -852,7 +863,6 @@ void CommandHandler::fileDownload()
             auto size = 100;
             std::string res_body = "filebody";
             auto length = res_body.length();
-
             
             // 设置 type/range/length 字段
             content_range = make_content_range(offset, length, size);
@@ -868,7 +878,6 @@ void CommandHandler::fileDownload()
 
         // 设置Content-Range
         res.set_header("Content-Range", content_range);
-        
     });
 
 }
