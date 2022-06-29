@@ -136,6 +136,7 @@ static void _log_head() {
 		if (_flag & LOG_FLAG_STDOUT) {
 			printf("%04d/%02d/%02d ", c_tm->tm_year + 1900,
 				c_tm->tm_mon + 1, c_tm->tm_mday);
+			fflush(stdout);
 		}
 	}
 	if (_flag & LOG_FLAG_TIME) {
@@ -144,6 +145,7 @@ static void _log_head() {
 		if (_flag & LOG_FLAG_STDOUT) {
 			printf("%02d:%02d:%02d ", c_tm->tm_hour, c_tm->tm_min,
 				c_tm->tm_sec);
+			fflush(stdout);
 		}
 	}
 }

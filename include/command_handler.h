@@ -24,6 +24,7 @@ void CommandHandlerDebug();
 class CommandHandler {
 public:
     explicit CommandHandler(const std::string="0.0.0.0", const int port=8000);
+    ~CommandHandler();
     /* 禁止拷贝构造函数与拷贝赋值操作 */
     CommandHandler(const CommandHandler&) = delete;
     CommandHandler& operator = (const CommandHandler&) = delete;
@@ -31,6 +32,8 @@ public:
 protected:
     /* 初始化服务器，绑定地址以及端口，并且配置路由，注意线程会阻塞 */
     int initServer(const std::string ip_address, const int port);
+    /* 解决服务器跨域问题 */
+    void resolveCORS();
     /* 用户相关路由设置 */
     void userRouterConfigure();
     void userLogin();

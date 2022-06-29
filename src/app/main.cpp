@@ -81,5 +81,6 @@ int main(int argc, char **argv) {
 #ifdef __ANAKIN_DEBUG__
 	CommandHandlerDebug();
 #endif
+
 	return 0;
 }

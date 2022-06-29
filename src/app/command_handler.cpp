@@ -55,12 +55,16 @@ CommandHandler::CommandHandler(const std::string ip_address, const int port)
     }
 }
 
+CommandHandler::~CommandHandler()
+{
+    // 析构函数
+    server_.stop();
+}
+
 int CommandHandler::initServer(const std::string ip_address, const int port)
 {
-    server_.Get("/hi", [](const Request& req, Response& res) {
-        res.set_content("hello", "text/plain");
-    });
-
+    /* CORS */
+    resolveCORS();
     /* 用户相关路由设置 */
     userRouterConfigure();
     /* 文件路由 */
@@ -68,8 +72,11 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     /* 测试路由 */
     routeTest();
 
+    LogC::log_printf("cloud-disk service run on %s:%d\n",
+        ip_address.c_str(), port);
     if (server_.listen(ip_address.c_str(), port) == false) {
-        cout << "listen " << ip_address << ":" << port << " failure!\n";
+        LogC::log_printf("cloud-disk service listen on %s:%d\n",
+            ip_address.c_str(), port);
         return -1;
     }
 
@@ -100,6 +107,7 @@ int CommandHandler::initUserManager()
     return 1;
 }
 
+
 /* 用户相关路由 */
 void CommandHandler::userRouterConfigure()
 {
@@ -121,6 +129,18 @@ void CommandHandler::fileRouterConfigure()
     fileDownload();
     filePreUpload();
     fileUpload();
+}
+
+/* 解决 CORS 问题 */
+void CommandHandler::resolveCORS()
+{
+    server_.Options("(./*)", [this](const Request& req, Response& res){
+        res.status = 204;
+        res.reason = "No Content";
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Headers", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS, GET");
+    });
 }
 
 /* 用户登录 */
@@ -362,13 +382,13 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
 /* 文件列表 */
 void CommandHandler::fileList()
 {
-    server_.Options("/api/file/list", [this](const Request& req, Response& res){
-        res.status = 204;
-        res.reason = "No Content";
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Headers", "*");
-        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
-    });
+    // server_.Options("/api/file/list", [this](const Request& req, Response& res){
+    //     res.status = 204;
+    //     res.reason = "No Content";
+    //     res.set_header("Access-Control-Allow-Origin", "*");
+    //     res.set_header("Access-Control-Allow-Headers", "*");
+    //     res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+    // });
 
     server_.Post("/api/file/list", [this](const Request& req, Response& res) {
         auto req_body = json::parse(req.body);
@@ -507,15 +527,29 @@ void CommandHandler::fileDelete()
         std::string msg = "file delete success";
 
         try {
-            verify_token(req);
+            auto user = verify_token(req);
             // 获取到绝对路径目录
             auto paths = req_body.at("paths");
 
-            /// @TODO: 批量删除文件
-            // int _ret = file_system_manager().remove(
-
-            // )
-            
+            // 批量删除文件
+            vector<string> hash_list;
+            for (const auto& path : paths) {
+                int _ret = file_system_manager().remove(
+                    path_join(user, {path}), hash_list
+                );
+                
+                // 日志记录
+                LogC::log_printf("%s user %s delete %s: %s\n", 
+                    req.remote_addr.c_str(), user.c_str(), string(path).c_str(), 
+                    file_system_manager().error(_ret));
+                
+                if (_ret != 0) {
+                    ret = -1;
+                    msg = file_system_manager().error(_ret);
+                    break;
+                }
+            }
+            /// TODO: 对删除文件的哈希值进行操作，计数为0删除
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -535,6 +569,7 @@ void CommandHandler::fileDelete()
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
+
     });
 
 }
@@ -545,22 +580,25 @@ void CommandHandler::fileCopy()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "copy success";
-        std::string user{};
+        std::string user{}, old_cwd{}, new_cwd{};
 
         try {
             user = verify_token(req);
             // 获取到绝对路径目录
-            auto old_cwd = req_body.at("oldcwd");
-            auto new_cwd = req_body.at("newcwd");
+            old_cwd = req_body.at("oldcwd");
+            new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
-            /// @TODO: 复制文件操作
+            int _ret;
+            // 复制文件操作
             for (const auto& f : files) {
-                ret = file_system_manager().copy(
+                _ret = file_system_manager().copy(
                     path_join(user, {old_cwd, f}),
-                    path_join(user, {new_cwd, f})
+                    path_join(user, {new_cwd})
                 );
-                if (ret != 0) {
+                // 如果出现错误，则停止复制，但之前操作不回滚
+                if (_ret != 0) {
+                    ret = -1;
                     msg = file_system_manager().error(ret);
                     break;
                 }
@@ -583,6 +621,11 @@ void CommandHandler::fileCopy()
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        
+        // 日志记录
+        LogC::log_printf("%s user %s copy from %s to %s: %s\n", 
+            req.remote_addr.c_str(), user.c_str(), old_cwd.c_str(), 
+            new_cwd.c_str(), msg.c_str());
     });
 
 }
@@ -593,23 +636,25 @@ void CommandHandler::fileMove()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "move success";
-        std::string user{};
+        std::string user{}, old_cwd{}, new_cwd{};
 
         try {
             user = verify_token(req);
             // 获取到绝对路径目录
-            auto old_cwd = req_body.at("oldcwd");
-            auto new_cwd = req_body.at("newcwd");
+            old_cwd = req_body.at("oldcwd");
+            new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
-            /// @TODO: 移动文件操作
+            int _ret;
+            // 移动文件操作
             for (const auto& f : files) {
-                ret = file_system_manager().move(
+                _ret = file_system_manager().move(
                     path_join(user, {old_cwd, f}),
-                    path_join(user, {new_cwd, f})
+                    path_join(user, {new_cwd})
                 );
-                if (ret != 0) {
-                    msg = file_system_manager().error(ret);
+                if (_ret != 0) {
+                    ret = -1;
+                    msg = file_system_manager().error(_ret);
                     break;
                 }
             }
@@ -633,6 +678,10 @@ void CommandHandler::fileMove()
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
+        // 日志记录
+        LogC::log_printf("%s user %s move from %s to %s: %s\n", 
+            req.remote_addr.c_str(), user.c_str(), old_cwd.c_str(), 
+            new_cwd.c_str(), msg.c_str());
     });
 
 }
@@ -825,8 +874,8 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::routeTest()
 {
-    server_.Get("/", [&](const Request& req, Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
+    server_.Get("/(.*)", [&](const Request& req, Response& res) {
+        // res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content("Hello World!", "text/plain");
     });
 }
