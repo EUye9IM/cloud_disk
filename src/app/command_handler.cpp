@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "access_queue.h"
@@ -194,6 +195,32 @@ void CommandHandler::userLogin()
     });
 }
 
+static bool passwordCheck(const std::string pass, const int min_len,
+    const int min_kinds)
+{
+    if (pass.length() < size_t(min_len))
+        return false;
+    int symbol[4]{}, count = 0;    // 依次代表大写、小写、数字和其他符号
+    for (const auto& s : pass) {
+        if (s >= 'A' && s <= 'Z')
+            symbol[0]++;
+        else if (s >= 'a' && s <= 'z') 
+            symbol[1]++;
+        else if (s >= '0' && s <= '9')
+            symbol[2]++;
+        else 
+            symbol[3]++;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (symbol[i])
+            count++;
+    }
+    if (count >= min_kinds)
+        return true;
+    return false;
+}
+
 /* 用户注册 */
 void CommandHandler::userSignup()
 {
@@ -211,6 +238,10 @@ void CommandHandler::userSignup()
             if (password != confirm_password) {
                 ret = -1;
                 msg = "password and confirm password not same";
+            }
+            else if (!passwordCheck(password, 12, 3)) {
+                ret = -1;
+                msg = "password is not strong";
             }
             else {
                 int _ret;
@@ -765,7 +796,8 @@ void CommandHandler::filePreUpload()
                     );
                     // 不想判断错误了
                     // 第一次，获取到分配的切片号
-                    ret = AccessQueue::Instance().getTask(md5);
+                    size_q count{};
+                    ret = AccessQueue::Instance().getTask(md5, count);
                 } else {
                     // 文件已存在，秒传
                     file_system_manager().makeFile(
@@ -809,6 +841,7 @@ void CommandHandler::fileUpload()
         std::string user{}, md5{};
         int ret = 0, next = 0, num{};
         std::string msg = "upload success";
+        size_q count{};
         
         try {
             user = verify_token(req);
@@ -818,7 +851,7 @@ void CommandHandler::fileUpload()
             
             auto data = req.body;
             // 写入信息，获取下一任务
-            next = AccessQueue::Instance().getTask(md5, num, data);
+            next = AccessQueue::Instance().getTask(md5, count, num, data);
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -839,12 +872,13 @@ void CommandHandler::fileUpload()
         res_body["ret"] = ret;
         res_body["msg"] = msg;
         res_body["next"] = next;
+        res_body["count"] = count;
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
-        LogC::log_printf("%s user %s upload %s~%d: %s\n", 
+        LogC::log_printf("%s user %s upload %s~%d: %s file has %lld block now.\n", 
             req.remote_addr.c_str(), user.c_str(), md5.c_str(), 
-            num, msg.c_str());
+            num, msg.c_str(), count);
     });
 }
 
