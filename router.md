@@ -29,6 +29,7 @@ return
 {
     ret: 0/-1  --- 成功/失败
     msg: 提示信息
+    token: <token>
 }
 ```
 

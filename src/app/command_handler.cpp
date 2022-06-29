@@ -150,6 +150,7 @@ void CommandHandler::userLogin()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "login success";
+        std::string token;
 
         try {
             int _ret;
@@ -164,9 +165,9 @@ void CommandHandler::userLogin()
             } else {
                 /* 登录成功需要携带token返回 */
                 // 创建token
-                auto token = Anakin::Token::create(user, 100);
+                token = Anakin::Token::create(user, 100);
                 token = "Bearer " + token;
-                res.set_header("Authorization", token);
+                // res.set_header("Authorization", token);
             }
         }
         catch (const json::exception& e) {
@@ -178,6 +179,7 @@ void CommandHandler::userLogin()
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
+        res_body["token"] = token;
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
