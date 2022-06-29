@@ -4,6 +4,7 @@
 
 #include "command_handler.h"
 #include <bits/types/FILE.h>
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -22,6 +23,7 @@
 #include "json.hpp"
 #include "jwt-cpp/token.hpp"
 #include "logc/logc.h"
+#include "transfer_handler.h"
 #include "user_info_manager.h"
 #include "utility.hpp"
 #include <bits/types/time_t.h>
@@ -565,7 +567,20 @@ void CommandHandler::fileDelete()
                     break;
                 }
             }
-            /// TODO: 对删除文件的哈希值进行操作，计数为0删除
+            // 对删除文件的哈希值进行操作，计数为0删除
+            hash_list.erase(std::unique(hash_list.begin(), hash_list.end()), 
+                hash_list.end());
+
+            for (const auto& hash : hash_list) {
+                bool is_exist;
+                int _ret = file_system_manager().hashExist(hash, is_exist);
+                if (_ret == 0 && !is_exist) {
+                    // 文件无用户关联，删除
+                    TransferHandler::Instance().removeFile(
+                        TransferHandler::Instance().hashToFPath(hash)
+                    );
+                }
+            }
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -791,7 +806,6 @@ void CommandHandler::fileUpload()
 {
     resolveCORS("/api/file/upload");
     server_.Post("/api/file/upload", [this](const Request& req, Response& res) {
-        auto req_body = json::parse(req.body);
         std::string user{}, md5{};
         int ret = 0, next = 0, num{};
         std::string msg = "upload success";
@@ -799,9 +813,10 @@ void CommandHandler::fileUpload()
         try {
             user = verify_token(req);
             // 获取上传文件切片信息
-            md5 = req_body.at("md5");
-            auto data = req_body.at("data");
-            num = req_body.at("num");
+            md5 = req.get_param_value("md5");
+            num = stoi(req.get_param_value("num"));
+            
+            auto data = req.body;
             // 写入信息，获取下一任务
             next = AccessQueue::Instance().getTask(md5, num, data);
         }
@@ -899,8 +914,13 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::routeTest()
 {
-    server_.Get("/(.*)", [&](const Request& req, Response& res) {
+    server_.Post("/api", [&](const Request& req, Response& res) {
         // res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content("Hello World!", "text/plain");
+        auto x = req.get_param_value("md5");
+        json j;
+        j["md5"] = x;
+        j["num"] = req.get_param_value("num");
+        res.set_content(j.dump(), "text/plain");
+        
     });
 }
