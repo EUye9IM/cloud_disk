@@ -24,10 +24,9 @@ TransferHandler::TransferHandler(std::string rootpath){
 
 std::string TransferHandler::createFile(int size,std::string hash){
     std::string fpath=_rootPath;
-    struct timeval tv;
+    /*struct timeval tv;
     struct tm* tfd;
     time_t timenow;
-    int fd;
     timenow=time(nullptr);
     tfd=localtime(&timenow);
     gettimeofday(&tv,nullptr);
@@ -46,8 +45,10 @@ std::string TransferHandler::createFile(int size,std::string hash){
             std::cout<<"Please check user permission.";
             exit(-1);
         }
-    }
+    }*/
+
     fpath.append(hash);
+    int fd;
     if ((fd=open(fpath.c_str(), O_RDWR|O_CREAT),0644)==-1){
         std::cout<<"check permission"<<std::endl;
         exit(-1);
@@ -82,6 +83,9 @@ int TransferHandler::fillFileContent(std::string fpath,int begin,int size,void* 
     return 0;
 }
 
-std::string TransferHandler::toFPath(std::string hash){
+std::string TransferHandler::hashToFPath(std::string hash){
+
+}
+std::string TransferHandler::pathToFPath(std::string path){
 
 }
