@@ -21,7 +21,7 @@ TransferHandler::TransferHandler(std::string rootpath){
     if(rootpath.back()!='/') _rootPath.append("/");
 }
 
-std::string TransferHandler::createFile(int size,std::string hash){
+std::string TransferHandler::createFile(long long size,std::string hash){
     std::string fpath=_rootPath;
     /*struct timeval tv;
     struct tm* tfd;
@@ -52,17 +52,17 @@ std::string TransferHandler::createFile(int size,std::string hash){
         std::cout<<"check permission"<<std::endl;
         exit(-1);
     }
-    ftruncate(fd,size);
+    ftruncate64(fd,size);
     close(fd);
     return fpath;
 }
-int TransferHandler::getFileContent(std::string fpath,int begin,int size,void* content){
+int TransferHandler::getFileContent(std::string fpath,long long begin,int size,void* content){
     int fd;
     fd=open(fpath.c_str(),O_RDONLY);
     if(fd==0){
         return -1;
     }
-    lseek(fd,begin,SEEK_SET);
+    lseek64(fd,begin,SEEK_SET);
     read(fd,content,size);
     close(fd);
     return 0;
@@ -70,13 +70,13 @@ int TransferHandler::getFileContent(std::string fpath,int begin,int size,void* c
 int TransferHandler::removeFile(std::string fpath){
     return remove(fpath.c_str());
 }
-int TransferHandler::fillFileContent(std::string fpath,int begin,int size,void* content){
+int TransferHandler::fillFileContent(std::string fpath,long long begin,int size,void* content){
     int fd;
     fd=open(fpath.c_str(),O_WRONLY);
     if(fd==0){
         return -1;
     }
-    lseek(fd,begin,SEEK_SET);
+    lseek64(fd,begin,SEEK_SET);
     write(fd,content,size);
     close(fd);
     return 0;
