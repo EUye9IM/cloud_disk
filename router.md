@@ -279,5 +279,18 @@ token失效使用状态码404来表示
     数据
 }
 
+post /api/predownload
+send
+{
+    "path": <path/to/file>,    
+}
+return 
+{
+    "ret": 
+    "msg": 
+    "url": 
+}
+
+
 问题：如果下载文件时服务端文件发生变化，此时已下载内容受损，所以考虑添加Last-Modified字段
 ```

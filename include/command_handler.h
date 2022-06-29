@@ -52,6 +52,9 @@ protected:
     void filePreUpload();
     void fileUpload();
 
+    /* 文件挂载 */
+    void mountDisk();
+
     void routeTest();
 
     // 生成文件树

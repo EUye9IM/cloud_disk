@@ -75,6 +75,8 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     /* 测试路由 */
     routeTest();
 
+    mountDisk();
+
     LogC::log_printf("cloud-disk service run on %s:%d\n",
         ip_address.c_str(), port);
     if (server_.listen(ip_address.c_str(), port) == false) {
@@ -942,6 +944,24 @@ void CommandHandler::fileDownload()
         // 设置Content-Range
         res.set_header("Content-Range", content_range);
     });
+
+}
+
+void CommandHandler::mountDisk()
+{
+    // 挂载目录
+    if (access(ROOT_PATH.c_str(), F_OK) == -1) {
+        if (mkdir(ROOT_PATH.c_str(), S_IRWXU) == -1) {
+            LogC::log_printf("user permission deny.\n");
+            exit(-1);
+        }
+    }
+    server_.set_mount_point("/download", ROOT_PATH);
+    server_.set_file_request_handler([this](const Request &req, Response &res) {
+        auto user = verify_token(req);
+
+    });
+    
 
 }
 
