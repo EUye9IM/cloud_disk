@@ -1,5 +1,5 @@
 #include "transfer_handler.h"
-//#include "utility.hpp"
+#include "utility.hpp"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -10,7 +10,6 @@
 #include <iostream>
 
 TransferHandler::TransferHandler(std::string rootpath){
-    //_fs=file_system_manager();
     _rootPath=rootpath;
     //建立根目录
     if(access(_rootPath.c_str(),F_OK)==-1){
@@ -84,8 +83,14 @@ int TransferHandler::fillFileContent(std::string fpath,int begin,int size,void* 
 }
 
 std::string TransferHandler::hashToFPath(std::string hash){
-
+    std::string toRet=_rootPath;
+    toRet.append(hash);
+    return toRet;
 }
 std::string TransferHandler::pathToFPath(std::string path){
-
+    std::string toRet=_rootPath;
+    FNode fn;
+    file_system_manager().getFile(path,fn);
+    toRet.append(fn.file_hash);
+    return toRet;
 }
