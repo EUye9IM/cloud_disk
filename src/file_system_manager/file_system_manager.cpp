@@ -16,13 +16,13 @@ CREATE TABLE node(\
 path VARCHAR(512) NOT NULL,\
 hash char(50),\
 mtime int(11),\
-PRIMARY KEY (path));\
+PRIMARY KEY (path)) DEFAULT CHARSET=gbk;\
 INSERT INTO node VALUES ('/',NULL,NULL);\
 DROP TABLE IF EXISTS file;\
 CREATE TABLE file(\
 hash char(50),\
 size bigint(22) NOT NULL,\
-PRIMARY KEY (hash));\
+PRIMARY KEY (hash)) DEFAULT CHARSET=gbk;\
 ";
 
 class TransactionGuard {
@@ -117,9 +117,10 @@ int FileSystemManager::makeFile(const std::string &file_path,
 
 	// find father
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(
-			stmt, "SELECT count(*) FROM node WHERE path = ? AND hash is NULL;",
-			-1)) {
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT count(*) FROM node WHERE path = "
+						   "CONVERT(? USING 'gbk') AND hash is NULL;",
+						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -161,7 +162,8 @@ int FileSystemManager::makeFile(const std::string &file_path,
 	// create son
 	mtime = std::time(nullptr);
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,?,?);", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "INSERT INTO node VALUES(CONVERT(? USING 'gbk'),?,?);", -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -253,9 +255,10 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 
 	// find father
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(
-			stmt, "SELECT count(*) FROM node WHERE path = ? AND hash is NULL;",
-			-1)) {
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT count(*) FROM node WHERE path = CONVERT(? "
+						   "USING 'gbk') AND hash is NULL;",
+						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -297,7 +300,9 @@ int FileSystemManager::makeFolder(const std::string &folder_path) {
 	// create son
 	mtime = std::time(nullptr);
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "INSERT INTO node VALUES(?,NULL,?);", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "INSERT INTO node VALUES(CONVERT(? USING 'gbk'),NULL,?);",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -360,11 +365,13 @@ int FileSystemManager::list(const std::string &folder_path,
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(
 			stmt,
-			"SELECT path, node.hash, mtime, size FROM node LEFT JOIN file "
-			"ON node.hash = file.hash WHERE SUBSTR(path,1,CHAR_LENGTH(?))=? "
-			"AND POSITION('/' in "
-			"SUBSTR(path,CHAR_LENGTH(?)+1))=CHAR_LENGTH(path)-CHAR_LENGTH(?) "
-			"AND path!=? ORDER BY path;",
+			"SELECT CONVERT(path USING 'utf8'), node.hash, mtime, size FROM "
+			"node LEFT JOIN file ON node.hash = file.hash WHERE "
+			"SUBSTR(path,1,CHAR_LENGTH(CONVERT(? USING 'gbk')))=CONVERT(? "
+			"USING 'gbk') AND POSITION('/' in "
+			"SUBSTR(path,CHAR_LENGTH(CONVERT(? USING "
+			"'gbk'))+1))=CHAR_LENGTH(path)-CHAR_LENGTH(CONVERT(? USING 'gbk')) "
+			"AND path!=CONVERT(? USING 'gbk') ORDER BY path;",
 			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
@@ -470,8 +477,10 @@ int FileSystemManager::move(const std::string &old_path,
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(stmt,
 						   "UPDATE node SET mtime = ?,path = "
-						   "CONCAT(?,SUBSTR(path,CHAR_LENGTH(?)+1)) where "
-						   "SUBSTR(path,1,CHAR_LENGTH(?))=?;",
+						   "CONCAT(?,SUBSTR(path,CHAR_LENGTH(CONVERT(? USING "
+						   "'gbk'))+1)) where "
+						   "SUBSTR(path,1,CHAR_LENGTH(CONVERT(? USING "
+						   "'gbk')))=CONVERT(? USING 'gbk');",
 						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
@@ -546,12 +555,14 @@ int FileSystemManager::copy(const std::string &old_path,
 
 	mtime = std::time(nullptr);
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(
-			stmt,
-			"INSERT INTO node(path,hash,mtime) SELECT "
-			"CONCAT(?,SUBSTR(path,CHAR_LENGTH(?)+1)),hash,mtime FROM "
-			"node where SUBSTR(path,1,CHAR_LENGTH(?))=?;",
-			-1)) {
+	if (mysql_stmt_prepare(stmt,
+						   "INSERT INTO node(path,hash,mtime) SELECT "
+						   "CONCAT(CONVERT(? USING "
+						   "'gbk'),SUBSTR(path,CHAR_LENGTH(CONVERT(? USING "
+						   "'gbk'))+1)),hash,mtime FROM "
+						   "node where SUBSTR(path,1,CHAR_LENGTH(CONVERT(? "
+						   "USING 'gbk')))=CONVERT(? USING 'gbk');",
+						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -614,7 +625,9 @@ int FileSystemManager::remove(
 	// remove
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(
-			stmt, "DELETE FROM node WHERE SUBSTR(path,1,CHAR_LENGTH(?))=?;",
+			stmt,
+			"DELETE FROM node WHERE SUBSTR(path,1,CHAR_LENGTH(CONVERT(? USING "
+			"'gbk')))=CONVERT(? USING 'gbk');",
 			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
@@ -715,7 +728,8 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	stmt = mysql_stmt_init(sql);
 	if (mysql_stmt_prepare(stmt,
 						   "SELECT path, node.hash, mtime, size FROM node LEFT "
-						   "JOIN file ON node.hash = file.hash WHERE path = ?;",
+						   "JOIN file ON node.hash = file.hash WHERE path = "
+						   "CONVERT(? USING 'gbk');",
 						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
@@ -873,10 +887,11 @@ int FileSystemManager::_updateModifyTime(const std::string &path,
 	static MYSQL_STMT *stmt = nullptr;
 	static MYSQL_BIND in[2];
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt,
-						   "UPDATE node SET mtime = ? where path = "
-						   "SUBSTR(?,1,CHAR_LENGTH(path));",
-						   -1)) {
+	if (mysql_stmt_prepare(
+			stmt,
+			"UPDATE node SET mtime = ? where path = "
+			"SUBSTR(CONVERT(? USING 'gbk'),1,CHAR_LENGTH(path));",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -926,7 +941,9 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 
 	// find if from exist
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ?;", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "SELECT hash FROM node WHERE path = CONVERT(? USING 'gbk');",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -971,7 +988,9 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 
 	// find if parent dir exist
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(stmt, "SELECT hash FROM node WHERE path = ?;", -1)) {
+	if (mysql_stmt_prepare(
+			stmt, "SELECT hash FROM node WHERE path = CONVERT(? USING 'gbk');",
+			-1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
@@ -1032,9 +1051,10 @@ int FileSystemManager::_checkMovePath(const std::string &from_path,
 
 	//     if parent dir not exist
 	stmt = mysql_stmt_init(sql);
-	if (mysql_stmt_prepare(
-			stmt, "SELECT hash FROM node WHERE path = ? AND hash is NULL;",
-			-1)) {
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT hash FROM node WHERE path = CONVERT(? USING "
+						   "'gbk')quit AND hash is NULL;",
+						   -1)) {
 		_mysql_error_msg = mysql_stmt_error(stmt);
 		mysql_stmt_close(stmt);
 		return _RET_SQL_ERR;
