@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 		.user = "root",
 		.pass = "root",
 		.database_name = "disk",
-		.charset = "UTF-8",
+		.charset = "gbk",
 	};
 
 	FileSystemManager fs;
@@ -92,6 +92,13 @@ int main(int argc, char *argv[]) {
 			cout << "list:" << endl;
 			for (auto i = list.begin(); i != list.end(); i++)
 				cout << (*i) << endl;
+		}
+		if (in == "find") {
+			string args[2];
+			cin >> args[0] >> args[1];
+			bool res;
+			ret = fs.include(args[0], args[1], res);
+			cout << res << endl;
 		}
 		if (in == "cat") {
 			string args;
