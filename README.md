@@ -2,6 +2,12 @@
 
 一个纯c++网盘实现
 
+项目完结。
+
+在此感谢 [yuanyang.wang](https://github.com/yuanyangwangTJ)、[/bin/cat](https://github.com/Maoyao233)、[Freyja923](https://github.com/Freyja923) 为项目做出的贡献。
+
+特别感谢 [Liric Mechan](https://github.com/liricliu) 的无私帮助。
+
 ## 代码风格约定
 
 - 宏定义、常量 使用 大蛇式命名
