@@ -891,25 +891,25 @@ void CommandHandler::fileUpload()
  * 生成 http Content-Range 字段
  * -1 表示未知
  **/
-static std::string make_content_range(
-    const long long start=-1, const long long end=-1, const long long size=-1, 
-    const std::string unit="bytes"
-) {
-    std::string field = unit + ' ';
-    if (start == -1 || end == -1) {
-        field += "*";
-    } else {
-        field += std::to_string(start) + '-' + std::to_string(end);
-    }
+// static std::string make_content_range(
+//     const long long start=-1, const long long end=-1, const long long size=-1, 
+//     const std::string unit="bytes"
+// ) {
+//     std::string field = unit + ' ';
+//     if (start == -1 || end == -1) {
+//         field += "*";
+//     } else {
+//         field += std::to_string(start) + '-' + std::to_string(end);
+//     }
 
-    if (size == -1) {
-        field += "/*";
-    } else {
-        field += '/' + std::to_string(size);
-    }
+//     if (size == -1) {
+//         field += "/*";
+//     } else {
+//         field += '/' + std::to_string(size);
+//     }
 
-    return field;
-}
+//     return field;
+// }
 
 // 文件预下载
 void CommandHandler::filePreDownload()
@@ -919,7 +919,8 @@ void CommandHandler::filePreDownload()
         auto req_body = json::parse(req.body);
         int ret = 0;
         std::string msg = "predownload success";
-        std::string url{};
+        std::string hash{};
+        size_q size{};
         
         try {
             auto user = verify_token(req);
@@ -932,14 +933,15 @@ void CommandHandler::filePreDownload()
 
             if (_ret == 0) {
                 // 查询成功
-                url = "/download/" + f.file_hash;
+                // url = "/download/" + f.file_hash;
+                hash = f.file_hash;
+                size = f.file_size;
             } else {
                 ret = -1;
                 msg = file_system_manager().error(_ret);
             }
             LogC::log_printf("%s user %s predownload %s get url: %s\n", 
                 req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
-            
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -955,7 +957,8 @@ void CommandHandler::filePreDownload()
         json res_body;
         res_body["ret"] = ret;
         res_body["msg"] = msg;
-        res_body["url"] = url;
+        res_body["hash"] = hash;
+        res_body["size"] = size;
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(res_body.dump(), "application/json");
@@ -964,70 +967,50 @@ void CommandHandler::filePreDownload()
 }
 
  
-static long long get_file_size(const char * filename)
-{
-    FILE *fp=fopen(filename,"r");  
-    if(!fp) return -1;  
-    fseek(fp,0L,SEEK_END);  
-    int size=ftell(fp);  
-    fclose(fp);  
+// static long long get_file_size(const char * filename)
+// {
+//     FILE *fp=fopen(filename,"r");  
+//     if(!fp) return -1;  
+//     fseek(fp,0L,SEEK_END);  
+//     int size=ftell(fp);  
+//     fclose(fp);  
       
-    return size; 
-}
+//     return size; 
+// }
 
 // 文件下载
 void CommandHandler::fileDownload()
 {
-    static const long long MAX_DOWNLOAD_LEN = 1024 * 1024 * 100;
-    resolveCORS(R"(/download/(.*))");
-    resolveCORS("/(.*)");
-    server_.Get(R"(/download/(.*))", [this](const Request& req, Response& res) {
-        // auto req_body = json::parse(req.body);
+    resolveCORS("/api/download");
+    server_.Post("/api/download", [this](const Request& req, Response& res) {
+        std::string user{}, md5{};
         int ret = 0;
+        size_q offset = 0, length = 0;
+
         std::string msg = "download success";
-        string user{}, file_md5;
-        string range{};
-       	long long byte_beg = 0, byte_end = -1;
-        if (req.has_header("Range")) {
-            range = req.get_header_value("Range");
-            sscanf(range.c_str(), "bytes=%lld", &byte_beg);
-            sscanf(range.c_str(), "bytes=%*[^-]-%lld", &byte_end); 
-            cout << "read range: " << byte_beg << " - " << byte_end << endl;
-        }
-
-        /// TODO: file download
+        
         try {
-            user = verify_token(req);
-            // 获取下载文件等信息
-            file_md5 = req.path.substr(string("/download/").length());
+            // user = verify_token(req);
+            // 获取上传文件切片信息
+            md5 = req.get_param_value("md5");
+            offset = stoll(req.get_param_value("offset"));
+            length = stoll(req.get_param_value("length"));
+            // 获取文件数据
             // 根据md5值计算文件大小
-            string file_path = TransferHandler::Instance().hashToFPath(file_md5);
-            auto file_size = get_file_size(file_path.c_str());
-            if (byte_end > file_size || byte_end == -1) {
-                byte_end = file_size;
-            }
+            string file_path = TransferHandler::Instance().hashToFPath(md5);
 
-            if (byte_end - byte_beg + 1 > MAX_DOWNLOAD_LEN) {
-                byte_end = byte_beg -1 + MAX_DOWNLOAD_LEN;
-            }
-
-            char* buf = new char[byte_end - byte_beg + 1];
-            int _ret = TransferHandler::Instance().getFileContent(file_path, byte_beg,
-                byte_end - byte_beg + 1, buf);
-            
+            char* buf = new char[length];
+            int _ret = TransferHandler::Instance().getFileContent(file_path, offset, length, buf);
             if (_ret == 0) {
                 // 写入body中
-                res.body = string(buf, byte_end - byte_beg + 1);
+                res.body = string(buf, length);
                 // 设置content-range
                 res.set_header("Accept-Ranges", "bytes");
-                res.set_header("Content-Range",
-                    make_content_range(byte_beg, byte_end, file_size));
-                res.set_header("Content-Length", to_string(res.body.length()));
                 res.set_header("Content-Type", "application/octet-stream");
                 
-                LogC::log_printf("%s user %s download file %s %lld bytes from %lld to %lld\n", 
+                LogC::log_printf("%s user %s download file %s %lld bytes offset %lld length %lld\n", 
                     req.remote_addr.c_str(), user.c_str(), 
-                    file_md5.c_str(), res.body.length(), byte_beg, byte_end);
+                    md5.c_str(), res.body.length(), offset, length);
             } else {
                 // nothing
                 ret = -1;
@@ -1044,16 +1027,91 @@ void CommandHandler::fileDownload()
             ret = -2;
             msg = "invalid login";
         }
-
-        res.set_header("Access-Control-Allow-Origin", "*");
         if (ret < 0) {
             res.status = 404;
-            LogC::log_printf("%s user %s download file %s: %s\n", 
-                req.remote_addr.c_str(), user.c_str(), 
-                file_md5.c_str(), msg.c_str());
         }
+        res.set_header("Access-Control-Allow-Origin", "*");
     });
 }
+
+// void CommandHandler::fileDownload()
+// {
+//     static const long long MAX_DOWNLOAD_LEN = 1024 * 1024 * 100;
+//     resolveCORS(R"(/download/(.*))");
+//     resolveCORS("/(.*)");
+//     server_.Get(R"(/download/(.*))", [this](const Request& req, Response& res) {
+//         // auto req_body = json::parse(req.body);
+//         int ret = 0;
+//         std::string msg = "download success";
+//         string user{}, file_md5;
+//         string range{};
+//        	long long byte_beg = 0, byte_end = -1;
+//         if (req.has_header("Range")) {
+//             range = req.get_header_value("Range");
+//             sscanf(range.c_str(), "bytes=%lld", &byte_beg);
+//             sscanf(range.c_str(), "bytes=%*[^-]-%lld", &byte_end); 
+//             cout << "read range: " << byte_beg << " - " << byte_end << endl;
+//         }
+
+//         /// TODO: file download
+//         try {
+//             user = verify_token(req);
+//             // 获取下载文件等信息
+//             file_md5 = req.path.substr(string("/download/").length());
+//             // 根据md5值计算文件大小
+//             string file_path = TransferHandler::Instance().hashToFPath(file_md5);
+//             auto file_size = get_file_size(file_path.c_str());
+//             if (byte_end > file_size || byte_end == -1) {
+//                 byte_end = file_size;
+//             }
+
+//             if (byte_end - byte_beg + 1 > MAX_DOWNLOAD_LEN) {
+//                 byte_end = byte_beg -1 + MAX_DOWNLOAD_LEN;
+//             }
+
+//             char* buf = new char[byte_end - byte_beg + 1];
+//             int _ret = TransferHandler::Instance().getFileContent(file_path, byte_beg,
+//                 byte_end - byte_beg + 1, buf);
+            
+//             if (_ret == 0) {
+//                 // 写入body中
+//                 res.body = string(buf, byte_end - byte_beg + 1);
+//                 // 设置content-range
+//                 res.set_header("Accept-Ranges", "bytes");
+//                 res.set_header("Content-Range",
+//                     make_content_range(byte_beg, byte_end, file_size));
+//                 res.set_header("Content-Length", to_string(res.body.length()));
+//                 res.set_header("Content-Type", "application/octet-stream");
+                
+//                 LogC::log_printf("%s user %s download file %s %lld bytes from %lld to %lld\n", 
+//                     req.remote_addr.c_str(), user.c_str(), 
+//                     file_md5.c_str(), res.body.length(), byte_beg, byte_end);
+//             } else {
+//                 // nothing
+//                 ret = -1;
+//             }
+//             delete []buf;
+//         }
+//         catch (const json::exception& e) {
+//             cout << e.what() << '\n';
+//             ret = -1;
+//             msg = "json data error!";
+//         }
+//         catch (const Anakin::token_exception& e) {
+//             cout << e.what() << '\n';
+//             ret = -2;
+//             msg = "invalid login";
+//         }
+
+//         res.set_header("Access-Control-Allow-Origin", "*");
+//         if (ret < 0) {
+//             res.status = 404;
+//             LogC::log_printf("%s user %s download file %s: %s\n", 
+//                 req.remote_addr.c_str(), user.c_str(), 
+//                 file_md5.c_str(), msg.c_str());
+//         }
+//     });
+// }
 
 
 void CommandHandler::mountDisk()

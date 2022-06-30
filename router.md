@@ -288,8 +288,19 @@ return
 {
     "ret": 
     "msg": 
-    "url": 
+    "hash": 
+    "size":
 }
+
+post post /api/download?md5=xxx&offset=yyy&length=zzz
+send
+{  
+}
+return 
+{
+    数据
+}
+错误 code=404
 
 
 问题：如果下载文件时服务端文件发生变化，此时已下载内容受损，所以考虑添加Last-Modified字段
