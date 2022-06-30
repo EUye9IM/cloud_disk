@@ -839,6 +839,73 @@ int FileSystemManager::hashExist(const std::string &hash, bool &is_exist) {
 	is_exist = (num == 1);
 	return _RET_OK;
 }
+int FileSystemManager::include(const std::string &path, const std::string &hash,
+							   bool &is_included) {
+	std::lock_guard<std::mutex> lock(_lock);
+	static std::string recent_path;
+	static MYSQL_STMT *stmt = nullptr;
+	static MYSQL_BIND in[3];
+	static MYSQL_BIND out;
+	static int num;
+	if (path.length() < 1 || path[0] != '/')
+		return _RET_BAD_PATH;
+	if (path.back() != '/')
+		recent_path = path + "/";
+	else
+		recent_path = path;
+
+	// find father
+	stmt = mysql_stmt_init(sql);
+	if (mysql_stmt_prepare(stmt,
+						   "SELECT count(*) FROM node WHERE "
+						   "SUBSTR(path,1,CHAR_LENGTH(CONVERT(? USING "
+						   "'gbk')))=CONVERT(? USING 'gbk') AND hash = ?;",
+						   -1)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	memset(in, 0, sizeof(in));
+	in[0].buffer_type = MYSQL_TYPE_STRING;
+	in[0].buffer = (void *)recent_path.c_str();
+	in[0].buffer_length = recent_path.length();
+	in[1].buffer_type = MYSQL_TYPE_STRING;
+	in[1].buffer = (void *)recent_path.c_str();
+	in[1].buffer_length = recent_path.length();
+	in[2].buffer_type = MYSQL_TYPE_STRING;
+	in[2].buffer = (void *)hash.c_str();
+	in[2].buffer_length = hash.length();
+
+	memset(&out, 0, sizeof(out));
+	out.buffer_type = MYSQL_TYPE_LONG;
+	out.buffer = (void *)&num;
+
+	if (mysql_stmt_bind_param(stmt, in)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_bind_result(stmt, &out)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+	if (mysql_stmt_fetch(stmt)) {
+		_mysql_error_msg = mysql_stmt_error(stmt);
+		mysql_stmt_close(stmt);
+		return _RET_SQL_ERR;
+	}
+
+	mysql_stmt_close(stmt);
+	is_included = (num != 0);
+	return _RET_OK;
+}
 
 int FileSystemManager::initDatabase() {
 	std::lock_guard<std::mutex> lock(_lock);
