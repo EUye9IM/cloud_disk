@@ -407,7 +407,7 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
             // 设置时间
             char buf[32]{};
             strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", 
-                localtime(&(f.modufy_time)));
+                localtime(&(f.modify_time)));
 
             file["time"] = std::string(buf);
             file["id"] = count++;

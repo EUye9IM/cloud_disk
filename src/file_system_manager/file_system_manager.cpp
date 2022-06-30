@@ -428,7 +428,7 @@ int FileSystemManager::list(const std::string &folder_path,
 		buf_node.name = buffer_path;
 		buf_node.is_file = (buffer_hash[0] != 0);
 		buf_node.file_hash = buffer_hash;
-		buf_node.modufy_time = mtime;
+		buf_node.modify_time = mtime;
 		buf_node.file_size = buffer_size;
 
 		pos1 = buf_node.name.find_last_of('/');
@@ -783,7 +783,7 @@ int FileSystemManager::getFile(const std::string &path, FNode &file) {
 	file.name = buffer_name;
 	file.is_file = (buffer_hash[0] != 0);
 	file.file_hash = buffer_hash;
-	file.modufy_time = buffer_mtime;
+	file.modify_time = buffer_mtime;
 	file.file_size = buffer_size;
 
 	pos1 = file.name.find_last_of('/');

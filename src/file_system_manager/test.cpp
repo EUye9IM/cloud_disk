@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 				auto r = (*i);
 				printf("%10s%5d%10s%10lld%40s", r.name.c_str(), r.is_file,
 					   r.file_hash.c_str(), r.file_size,
-					   asctime(localtime(&r.modufy_time)));
+					   asctime(localtime(&r.modify_time)));
 			}
 			continue;
 		}
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 			ret = fs.getFile(args, r);
 			printf("%10s%5d%10s%10lld%40s", r.name.c_str(), r.is_file,
 				   r.file_hash.c_str(), r.file_size,
-				   asctime(localtime(&r.modufy_time)));
+				   asctime(localtime(&r.modify_time)));
 			continue;
 		}
 		if (in == "quit") {

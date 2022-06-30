@@ -11,7 +11,7 @@
 struct FNode {
 	std::string name;
 	bool is_file;
-	std::time_t modufy_time;
+	std::time_t modify_time;
 	std::string file_hash;
 	long long file_size;
 };
