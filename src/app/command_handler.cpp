@@ -68,6 +68,7 @@ CommandHandler::~CommandHandler()
 int CommandHandler::initServer(const std::string ip_address, const int port)
 {
     /* CORS */
+    server_.set_payload_max_length(1024 * 1024 * 512); // 512MB
     // resolveCORS();
     /* 用户相关路由设置 */
     userRouterConfigure();
@@ -941,9 +942,13 @@ void CommandHandler::filePreDownload()
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
         }
         catch (const Anakin::token_exception& e) {
             cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
         }
         
         json res_body;
@@ -957,6 +962,66 @@ void CommandHandler::filePreDownload()
 
 }
 
+// 文件下载
+void CommandHandler::fileDownload()
+{
+    // resolveCORS("/api/predownload");
+    resolveCORS(R"(/api/download/(.*))");
+    resolveCORS("/(.*)");
+    server_.Post("/api/download/(.*)", [this](const Request& req, Response& res) {
+        auto req_body = json::parse(req.body);
+        int ret = 0;
+        std::string msg = "predownload success";
+        std::string url{};
+        // 解析 ranges
+        httplib::Ranges ranges;
+        detail::parse_range_header(req.get_header_value("range"),
+            ranges);
+        
+        /// TODO: file download
+        try {
+            auto user = verify_token(req);
+            // 获取下载文件等信息
+            std::string path = req_body.at("path");
+            FNode f;
+            int _ret = file_system_manager().getFile(
+                path_join(user, {path}), f
+            );
+
+            if (_ret == 0) {
+                // 查询成功
+                url = "/download/" + f.file_hash;
+            } else {
+                ret = -1;
+                msg = file_system_manager().error(_ret);
+            }
+            LogC::log_printf("%s user %s predownload %s get url: %s\n", 
+                req.remote_addr.c_str(), user.c_str(), path.c_str(), msg.c_str());
+            
+        }
+        catch (const json::exception& e) {
+            cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
+        }
+        catch (const Anakin::token_exception& e) {
+            cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+        
+        json res_body;
+        res_body["ret"] = ret;
+        res_body["msg"] = msg;
+        res_body["url"] = url;
+
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(res_body.dump(), "application/json");
+    });
+
+}
+
+
 void CommandHandler::mountDisk()
 {
     // 挂载目录
@@ -967,12 +1032,27 @@ void CommandHandler::mountDisk()
         }
     }
     server_.set_mount_point("/download", ROOT_PATH);
+    resolveCORS(R"(/download/(.*))");
+    resolveCORS("/(.*)");
     server_.set_file_request_handler([this](const Request &req, Response &res) {
+        int ret = 0;
+        std::string msg = "download success";
+        std::string user{}, file_md5{};
         try {
-            std::string file_md5 = req.path.substr(string("/download/").length());
+            file_md5 = req.path.substr(string("/download/").length());
+            // user = verify_token(req);
+            user = "someone";
+
+            // 下面判断用户是否拥有此文件
+            // bool is_include;
+            // int _ret = file_system_manager().include(
+            //     path_join(user, {"/"}), file_md5, is_include
+            // );
+            // if (_ret == 0 && is_include) {
+            //     // 用户确实拥有此文件
+
+            // } 
             
-            auto user = verify_token(req);
-            // string user = "demo";
             LogC::log_printf("%s user %s download file %s %lld bytes\n", 
                 req.remote_addr.c_str(), user.c_str(), 
                 file_md5.c_str(), res.body.length());
@@ -980,9 +1060,26 @@ void CommandHandler::mountDisk()
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
+            ret = -1;
+            msg = "json data error!";
         }
         catch (const Anakin::token_exception& e) {
             cout << e.what() << '\n';
+            ret = -2;
+            msg = "invalid login";
+        }
+        if (ret < 0) {
+            // 错误了就别想拿到正确信息
+            res.body = msg;
+            LogC::log_printf("%s user %s download file %s: %s\n", 
+                req.remote_addr.c_str(), user.c_str(), 
+                file_md5.c_str(), msg.c_str());
+        } else {
+            // 信息正确，添加disposition
+            string disposition = "attachment;filename=" + file_md5;
+            res.set_header("Content-Disposition", disposition);
+            res.set_header("Access-Control-Allow-Origin", "*");
+            res.set_header("Content-Type", "application/octet-stream");
         }
 
     });
