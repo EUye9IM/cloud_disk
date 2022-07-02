@@ -1,0 +1,42 @@
+{
+  "name": "cloud_disk",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "electron:build": "vue-tsc --noEmit && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "main": "dist/electron/main.js",
+  "dependencies": {
+    "@types/md5": "^2.3.2",
+    "@types/streamsaver": "^2.0.1",
+    "axios": "^0.27.2",
+    "cross-env": "^7.0.3",
+    "element-plus": "^2.2.6",
+    "md5": "^2.3.0",
+    "pause-until": "^1.0.2",
+    "streamsaver": "^2.0.6",
+    "vite-plugin-resolve": "^2.1.2",
+    "vue": "^3.2.37",
+    "vue-router": "^4.0.16",
+    "vuex": "^4.0.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.3",
+    "electron": "^19.0.5",
+    "electron-builder": "^23.1.0",
+    "typescript": "^4.5.4",
+    "vite": "^2.9.9",
+    "vite-plugin-electron": "^0.4.9",
+    "vue-tsc": "^0.34.7"
+  },
+  "keywords": [
+    "electron",
+    "rollup",
+    "vite",
+    "vue3",
+    "vue"
+  ]
+}
