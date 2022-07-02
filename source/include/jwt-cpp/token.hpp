@@ -1,6 +1,6 @@
 /***
- * åŸºäº jwt-cpp å®ç°çš„å¯ä»¥ç®€å•ä½¿ç”¨çš„ token æ¨¡å—
- * token æ— çŠ¶æ€ï¼Œç”¨äºåˆ›å»ºå’ŒéªŒè¯
+ * »ùÓÚ jwt-cpp ÊµÏÖµÄ¿ÉÒÔ¼òµ¥Ê¹ÓÃµÄ token Ä£¿é
+ * token ÎŞ×´Ì¬£¬ÓÃÓÚ´´½¨ºÍÑéÖ¤
  **/
 
 #ifndef TOKEN_HPP
@@ -25,7 +25,7 @@ class Token
 public:
     Token() = default;
     static const std::string create(const std::string user, const int expire_time=15);
-    /* è®¤è¯å‡½æ•°ï¼Œå¦‚æœå‡ºé”™æŠ›å‡ºå¼‚å¸¸ï¼Œæ­£å¸¸è¿”å›ç”¨æˆ·è´¦å· */
+    /* ÈÏÖ¤º¯Êı£¬Èç¹û³ö´íÅ×³öÒì³££¬Õı³£·µ»ØÓÃ»§ÕËºÅ */
     static std::string verify(const std::string token);
 
 private:

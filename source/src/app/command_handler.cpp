@@ -1,5 +1,5 @@
 /***
- * CommandHandler æ¨¡å—å®ç°
+ * CommandHandler Ä£¿éÊµÏÖ
  **/
 
 #include "command_handler.h"
@@ -36,7 +36,7 @@ using namespace httplib;
 using namespace std;
 
 
-/* è°ƒè¯•å‡½æ•° */
+/* µ÷ÊÔº¯Êı */
 #ifdef __ANAKIN_DEBUG__
 void CommandHandlerDebug()
 {
@@ -47,13 +47,13 @@ void CommandHandlerDebug()
 CommandHandler::CommandHandler(const std::string ip_address, const int port)
     : user_manager_(std::make_unique<UserInfoManager>())
 {
-    // åˆå§‹å¹¶åˆ›å»ºæ•°æ®åº“
+    // ³õÊ¼²¢´´½¨Êı¾İ¿â
     if (!initUserManager()) {
         LogC::log_println("userinfomanager init failure.");
         exit(EXIT_FAILURE);
     }
 
-    // å°†ä¼šè¿›å…¥çº¿ç¨‹é˜»å¡ä¸­
+    // ½«»á½øÈëÏß³Ì×èÈûÖĞ
     if (initServer(ip_address, port) < 0) {
         exit(EXIT_FAILURE);
     }
@@ -61,7 +61,7 @@ CommandHandler::CommandHandler(const std::string ip_address, const int port)
 
 CommandHandler::~CommandHandler()
 {
-    // ææ„å‡½æ•°
+    // Îö¹¹º¯Êı
     server_.stop();
 }
 
@@ -70,11 +70,11 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     /* CORS */
     server_.set_payload_max_length(1024 * 1024 * 512); // 512MB
     // resolveCORS();
-    /* ç”¨æˆ·ç›¸å…³è·¯ç”±è®¾ç½® */
+    /* ÓÃ»§Ïà¹ØÂ·ÓÉÉèÖÃ */
     userRouterConfigure();
-    /* æ–‡ä»¶è·¯ç”± */
+    /* ÎÄ¼şÂ·ÓÉ */
     fileRouterConfigure();
-    /* æµ‹è¯•è·¯ç”± */
+    /* ²âÊÔÂ·ÓÉ */
     routeTest();
 
     // mountDisk();
@@ -90,7 +90,7 @@ int CommandHandler::initServer(const std::string ip_address, const int port)
     return 0;
 }
 
-/* å¯åŠ¨å¹¶åˆå§‹åŒ–sqlæœåŠ¡å™¨ */
+/* Æô¶¯²¢³õÊ¼»¯sql·şÎñÆ÷ */
 int CommandHandler::initUserManager()
 {
     // user_manager_ = std::make_unique<UserInfoManager>();
@@ -110,12 +110,12 @@ int CommandHandler::initUserManager()
 		return 0;
 	}
 #endif
-    // åˆå§‹åŒ–æˆåŠŸ
+    // ³õÊ¼»¯³É¹¦
     return 1;
 }
 
 
-/* ç”¨æˆ·ç›¸å…³è·¯ç”± */
+/* ÓÃ»§Ïà¹ØÂ·ÓÉ */
 void CommandHandler::userRouterConfigure()
 {
     userLogin();
@@ -124,7 +124,7 @@ void CommandHandler::userRouterConfigure()
     userLogout();
 }
 
-/* æ–‡ä»¶è·¯ç”±é…ç½® */
+/* ÎÄ¼şÂ·ÓÉÅäÖÃ */
 void CommandHandler::fileRouterConfigure()
 {
     fileList();
@@ -139,7 +139,7 @@ void CommandHandler::fileRouterConfigure()
     fileUpload();
 }
 
-/* è§£å†³ CORS é—®é¢˜ */
+/* ½â¾ö CORS ÎÊÌâ */
 void CommandHandler::resolveCORS(std::string route)
 {
     server_.Options(route, [this](const Request& req, Response& res){
@@ -151,7 +151,7 @@ void CommandHandler::resolveCORS(std::string route)
     });
 }
 
-/* ç”¨æˆ·ç™»å½• */
+/* ÓÃ»§µÇÂ¼ */
 void CommandHandler::userLogin()
 {
     resolveCORS("/api/login");
@@ -167,14 +167,14 @@ void CommandHandler::userLogin()
             _user = user;
             auto password = req_body.at("password");
             
-            // æ•°æ®åº“å¤„ç†ç”¨æˆ·
+            // Êı¾İ¿â´¦ÀíÓÃ»§
             if ((_ret = user_manager_->check(user, password))) {
-                // è·å–é”™è¯¯ä¿¡æ¯
+                // »ñÈ¡´íÎóĞÅÏ¢
                 msg = user_manager_->error(_ret);
                 ret = -1;
             } else {
-                /* ç™»å½•æˆåŠŸéœ€è¦æºå¸¦tokenè¿”å› */
-                // åˆ›å»ºtoken
+                /* µÇÂ¼³É¹¦ĞèÒªĞ¯´øtoken·µ»Ø */
+                // ´´½¨token
                 token = Anakin::Token::create(user, 100);
                 token = "Bearer " + token;
                 // res.set_header("Authorization", token);
@@ -194,7 +194,7 @@ void CommandHandler::userLogin()
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
 
-        // æ—¥å¿—è®°å½•ç™»å½•ä¿¡æ¯
+        // ÈÕÖ¾¼ÇÂ¼µÇÂ¼ĞÅÏ¢
         LogC::log_printf("%s user %s login: %s\n", 
             req.remote_addr.c_str(), _user.c_str(), msg.c_str());
     });
@@ -205,7 +205,7 @@ static bool passwordCheck(const std::string pass, const int min_len,
 {
     if (pass.length() < size_t(min_len))
         return false;
-    int symbol[4]{}, count = 0;    // ä¾æ¬¡ä»£è¡¨å¤§å†™ã€å°å†™ã€æ•°å­—å’Œå…¶ä»–ç¬¦å·
+    int symbol[4]{}, count = 0;    // ÒÀ´Î´ú±í´óĞ´¡¢Ğ¡Ğ´¡¢Êı×ÖºÍÆäËû·ûºÅ
     for (const auto& s : pass) {
         if (s >= 'A' && s <= 'Z')
             symbol[0]++;
@@ -226,7 +226,7 @@ static bool passwordCheck(const std::string pass, const int min_len,
     return false;
 }
 
-/* ç”¨æˆ·æ³¨å†Œ */
+/* ÓÃ»§×¢²á */
 void CommandHandler::userSignup()
 {
     resolveCORS("/api/signup");
@@ -250,7 +250,7 @@ void CommandHandler::userSignup()
             }
             else {
                 int _ret;
-                /// TODO: éœ€è¦åˆ¤æ–­ç”¨æˆ·æ˜¯å¦å­˜åœ¨ï¼Œä¸å­˜åœ¨æ·»åŠ ç”¨æˆ·
+                /// TODO: ĞèÒªÅĞ¶ÏÓÃ»§ÊÇ·ñ´æÔÚ£¬²»´æÔÚÌí¼ÓÓÃ»§
                 if ((_ret = user_manager_->add(user, password))) {
                     msg = user_manager_->error(_ret); 
                     ret = -1;
@@ -269,10 +269,10 @@ void CommandHandler::userSignup()
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
-        // æ—¥å¿—è®°å½•æ³¨å†Œä¿¡æ¯
+        // ÈÕÖ¾¼ÇÂ¼×¢²áĞÅÏ¢
         LogC::log_printf("%s signup: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
-        // ç”¨æˆ·æ³¨å†ŒæˆåŠŸåæ·»åŠ ç”¨æˆ·æ ¹ç›®å½•
+        // ÓÃ»§×¢²á³É¹¦ºóÌí¼ÓÓÃ»§¸ùÄ¿Â¼
         if (ret == 0) {
             int _ret = file_system_manager().makeFolder(path_join(user, {""}));
             LogC::log_printf("user %s mkdir /%s %s\n", 
@@ -281,7 +281,7 @@ void CommandHandler::userSignup()
     });
 }
 
-/* ç”¨æˆ·ç™»å‡º */
+/* ÓÃ»§µÇ³ö */
 void CommandHandler::userLogout()
 {
     resolveCORS("/api/logout");
@@ -293,7 +293,7 @@ void CommandHandler::userLogout()
         try {
             auto user = req_body.at("user");
             
-            /// TODO:æ­¤å¤„éœ€è¦tokenè¿‡æœŸæ“ä½œ(ä¸è¿‡æœŸä¼¼ä¹ä¹Ÿå¯ä»¥)
+            /// TODO:´Ë´¦ĞèÒªtoken¹ıÆÚ²Ù×÷(²»¹ıÆÚËÆºõÒ²¿ÉÒÔ)
         }
         catch (const json::exception& e) {
             cout << e.what() << '\n';
@@ -307,13 +307,13 @@ void CommandHandler::userLogout()
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
-        // æ—¥å¿—è®°å½•ç™»å‡ºä¿¡æ¯
+        // ÈÕÖ¾¼ÇÂ¼µÇ³öĞÅÏ¢
         LogC::log_printf("%s logout: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
     });
 }
 
-/* ç”¨æˆ·æ”¹å¯† */
+/* ÓÃ»§¸ÄÃÜ */
 void CommandHandler::userChangepass()
 {
     resolveCORS("/api/changepass");
@@ -339,7 +339,7 @@ void CommandHandler::userChangepass()
             }
             else {
                 int _ret;
-                // æ•°æ®åº“æ“ä½œ
+                // Êı¾İ¿â²Ù×÷
                 if ((_ret = user_manager_->change(user, new_password))) {
                     msg = user_manager_->error(_ret);
                     ret = -1;
@@ -363,7 +363,7 @@ void CommandHandler::userChangepass()
 
         res.set_content(res_body.dump(), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
-        // æ—¥å¿—è®°å½•ç™»å½•ä¿¡æ¯
+        // ÈÕÖ¾¼ÇÂ¼µÇÂ¼ĞÅÏ¢
         LogC::log_printf("%s changepass: %s\n", 
                         req.remote_addr.c_str(), msg.c_str());
     });
@@ -387,7 +387,7 @@ std::string CommandHandler::verify_token(const httplib::Request& req) const
     }
 }
 
-// é€’å½’ç”Ÿæˆæ–‡ä»¶æ ‘
+// µİ¹éÉú³ÉÎÄ¼şÊ÷
 int CommandHandler::generateFileTree(std::string path, int& count, vector<json>& files)
 {
     int _ret;
@@ -404,7 +404,7 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
                 file["size"] = f.file_size;
             }
 
-            // è®¾ç½®æ—¶é—´
+            // ÉèÖÃÊ±¼ä
             char buf[32]{};
             strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", 
                 localtime(&(f.modify_time)));
@@ -424,7 +424,7 @@ int CommandHandler::generateFileTree(std::string path, int& count, vector<json>&
     return _ret;
 }
 
-/* æ–‡ä»¶åˆ—è¡¨ */
+/* ÎÄ¼şÁĞ±í */
 void CommandHandler::fileList()
 {
     resolveCORS("/api/file/list");
@@ -438,10 +438,10 @@ void CommandHandler::fileList()
 
         try {
             user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             path = req_body.at("path");
 
-            // è·å–ç›®å½•ä¸‹çš„æ–‡ä»¶ä¿¡æ¯
+            // »ñÈ¡Ä¿Â¼ÏÂµÄÎÄ¼şĞÅÏ¢
             int _ret;
             int count = 1;
             _ret = generateFileTree(path_join(user, {path}), count, files);
@@ -486,11 +486,11 @@ void CommandHandler::fileNewFolder()
 
         try {
             user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             auto cwd = req_body.at("cwd");
             auto folder_name = req_body.at("foldername");
 
-            // åˆ›å»ºæ–‡ä»¶å¤¹
+            // ´´½¨ÎÄ¼ş¼Ğ
             path = path_join(user, {cwd, folder_name});
             int _ret = file_system_manager().makeFolder(path);
             if (_ret != 0) {
@@ -531,22 +531,22 @@ void CommandHandler::fileRename()
 
         try {
             auto user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             auto cwd = req_body.at("cwd");
             auto old_name = req_body.at("oldname");
             auto new_name = req_body.at("newname");
 
-            /// @TODO: æ–‡ä»¶æ”¹å
+            /// @TODO: ÎÄ¼ş¸ÄÃû
             int _ret = file_system_manager().move(
                 path_join(user, {cwd, old_name}),
                 path_join(user, {cwd, new_name})
             );
-            // æ”¹åå¤±è´¥
+            // ¸ÄÃûÊ§°Ü
             if (_ret != 0) {
                 ret = -1;
                 msg = file_system_manager().error(_ret);
             }
-            // æ—¥å¿—è®°å½•
+            // ÈÕÖ¾¼ÇÂ¼
             LogC::log_printf("%s user %s rename %s to %s in %s: %s\n",
                 req.remote_addr.c_str(), user.c_str(), 
                 string(old_name).c_str(), string(new_name).c_str(),
@@ -582,17 +582,17 @@ void CommandHandler::fileDelete()
 
         try {
             auto user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             auto paths = req_body.at("paths");
 
-            // æ‰¹é‡åˆ é™¤æ–‡ä»¶
+            // ÅúÁ¿É¾³ıÎÄ¼ş
             vector<string> hash_list;
             for (const auto& path : paths) {
                 int _ret = file_system_manager().remove(
                     path_join(user, {path}), hash_list
                 );
                 
-                // æ—¥å¿—è®°å½•
+                // ÈÕÖ¾¼ÇÂ¼
                 LogC::log_printf("%s user %s delete %s: %s\n", 
                     req.remote_addr.c_str(), user.c_str(), string(path).c_str(), 
                     file_system_manager().error(_ret));
@@ -603,7 +603,7 @@ void CommandHandler::fileDelete()
                     break;
                 }
             }
-            // å¯¹åˆ é™¤æ–‡ä»¶çš„å“ˆå¸Œå€¼è¿›è¡Œæ“ä½œï¼Œè®¡æ•°ä¸º0åˆ é™¤
+            // ¶ÔÉ¾³ıÎÄ¼şµÄ¹şÏ£Öµ½øĞĞ²Ù×÷£¬¼ÆÊıÎª0É¾³ı
             hash_list.erase(std::unique(hash_list.begin(), hash_list.end()), 
                 hash_list.end());
 
@@ -611,7 +611,7 @@ void CommandHandler::fileDelete()
                 bool is_exist;
                 int _ret = file_system_manager().hashExist(hash, is_exist);
                 if (_ret == 0 && !is_exist) {
-                    // æ–‡ä»¶æ— ç”¨æˆ·å…³è”ï¼Œåˆ é™¤
+                    // ÎÄ¼şÎŞÓÃ»§¹ØÁª£¬É¾³ı
                     TransferHandler::Instance().removeFile(
                         TransferHandler::Instance().hashToFPath(hash)
                     );
@@ -652,26 +652,26 @@ void CommandHandler::fileCopy()
 
         try {
             user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             old_cwd = req_body.at("oldcwd");
             new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             int _ret;
-            // å¤åˆ¶æ–‡ä»¶æ“ä½œ
+            // ¸´ÖÆÎÄ¼ş²Ù×÷
             for (const auto& f : files) {
                 _ret = file_system_manager().copy(
                     path_join(user, {old_cwd, f}),
                     path_join(user, {new_cwd})
                 );
 
-                // æ—¥å¿—è®°å½•
+                // ÈÕÖ¾¼ÇÂ¼
                 LogC::log_printf("%s user %s copy %s from %s to %s: %s\n", 
                     req.remote_addr.c_str(), user.c_str(), string(f).c_str(),
                     old_cwd.c_str(), new_cwd.c_str(), 
                     file_system_manager().error(_ret));
 
-                // å¦‚æœå‡ºç°é”™è¯¯ï¼Œåˆ™åœæ­¢å¤åˆ¶ï¼Œä½†ä¹‹å‰æ“ä½œä¸å›æ»š
+                // Èç¹û³öÏÖ´íÎó£¬ÔòÍ£Ö¹¸´ÖÆ£¬µ«Ö®Ç°²Ù×÷²»»Ø¹ö
                 if (_ret != 0) {
                     ret = -1;
                     msg = file_system_manager().error(_ret);
@@ -713,20 +713,20 @@ void CommandHandler::fileMove()
 
         try {
             user = verify_token(req);
-            // è·å–åˆ°ç»å¯¹è·¯å¾„ç›®å½•
+            // »ñÈ¡µ½¾ø¶ÔÂ·¾¶Ä¿Â¼
             old_cwd = req_body.at("oldcwd");
             new_cwd = req_body.at("newcwd");
             auto files = req_body.at("files");
 
             int _ret;
-            // ç§»åŠ¨æ–‡ä»¶æ“ä½œ
+            // ÒÆ¶¯ÎÄ¼ş²Ù×÷
             for (const auto& f : files) {
                 _ret = file_system_manager().move(
                     path_join(user, {old_cwd, f}),
                     path_join(user, {new_cwd})
                 );
                 
-                // æ—¥å¿—è®°å½•
+                // ÈÕÖ¾¼ÇÂ¼
                 LogC::log_printf("%s user %s move %s from %s to %s: %s\n", 
                     req.remote_addr.c_str(), user.c_str(), string(f).c_str(),
                     old_cwd.c_str(), new_cwd.c_str(), 
@@ -762,7 +762,7 @@ void CommandHandler::fileMove()
 
 }
 
-// æ–‡ä»¶é¢„ä¸Šä¼ 
+// ÎÄ¼şÔ¤ÉÏ´«
 void CommandHandler::filePreUpload()
 {
     resolveCORS("/api/file/preupload");
@@ -774,37 +774,37 @@ void CommandHandler::filePreUpload()
         
         try {
             user = verify_token(req);
-            // è·å–é¢„ä¸Šä¼ æ–‡ä»¶ç­‰ä¿¡æ¯
+            // »ñÈ¡Ô¤ÉÏ´«ÎÄ¼şµÈĞÅÏ¢
             path = req_body.at("path");
             auto size = req_body.at("size");
             auto md5 = req_body.at("md5");
 
             int _ret;
             FNode f;
-            // é¦–å…ˆæ£€æŸ¥æ–‡ä»¶æ˜¯å¦é‡å¤
+            // Ê×ÏÈ¼ì²éÎÄ¼şÊÇ·ñÖØ¸´
             _ret = file_system_manager().getFile(
                 path_join(user, {path}), f
             );
             if (_ret == 0) {
-                // å½“å‰æ–‡ä»¶å·²ç»å­˜åœ¨
+                // µ±Ç°ÎÄ¼şÒÑ¾­´æÔÚ
                 ret = -1;
                 msg = "file exited";
             } else {
-                // æ–‡ä»¶ä¸å­˜åœ¨ï¼Œæ£€æŸ¥æ˜¯å¦æ»¡è¶³ç§’ä¼ 
-                // æ ¹æ®md5æ£€æŸ¥æ˜¯å¦æ»¡è¶³ç§’ä¼ 
+                // ÎÄ¼ş²»´æÔÚ£¬¼ì²éÊÇ·ñÂú×ãÃë´«
+                // ¸ù¾İmd5¼ì²éÊÇ·ñÂú×ãÃë´«
                 bool is_exist;
                 file_system_manager().hashExist(md5, is_exist);
                 if (!is_exist) {
-                    // å¦‚æœæ²¡æœ‰æ­¤æ–‡ä»¶
+                    // Èç¹ûÃ»ÓĞ´ËÎÄ¼ş
                     _ret = AccessQueue::Instance().startFileQueue(
                         path_join(user, {path}), md5, size
                     );
-                    // ä¸æƒ³åˆ¤æ–­é”™è¯¯äº†
-                    // ç¬¬ä¸€æ¬¡ï¼Œè·å–åˆ°åˆ†é…çš„åˆ‡ç‰‡å·
+                    // ²»ÏëÅĞ¶Ï´íÎóÁË
+                    // µÚÒ»´Î£¬»ñÈ¡µ½·ÖÅäµÄÇĞÆ¬ºÅ
                     size_q count{};
                     ret = AccessQueue::Instance().getTask(md5, count);
                 } else {
-                    // æ–‡ä»¶å·²å­˜åœ¨ï¼Œç§’ä¼ 
+                    // ÎÄ¼şÒÑ´æÔÚ£¬Ãë´«
                     file_system_manager().makeFile(
                         path_join(user, {path}), md5, size
                     );
@@ -838,7 +838,7 @@ void CommandHandler::filePreUpload()
     });
 }
 
-// æ–‡ä»¶ä¸Šä¼ 
+// ÎÄ¼şÉÏ´«
 void CommandHandler::fileUpload()
 {
     resolveCORS("/api/file/upload");
@@ -850,12 +850,12 @@ void CommandHandler::fileUpload()
         
         try {
             user = verify_token(req);
-            // è·å–ä¸Šä¼ æ–‡ä»¶åˆ‡ç‰‡ä¿¡æ¯
+            // »ñÈ¡ÉÏ´«ÎÄ¼şÇĞÆ¬ĞÅÏ¢
             md5 = req.get_param_value("md5");
             num = stoi(req.get_param_value("num"));
             
             auto data = req.body;
-            // å†™å…¥ä¿¡æ¯ï¼Œè·å–ä¸‹ä¸€ä»»åŠ¡
+            // Ğ´ÈëĞÅÏ¢£¬»ñÈ¡ÏÂÒ»ÈÎÎñ
             next = AccessQueue::Instance().getTask(md5, count, num, data);
         }
         catch (const json::exception& e) {
@@ -888,8 +888,8 @@ void CommandHandler::fileUpload()
 }
 
 /**
- * ç”Ÿæˆ http Content-Range å­—æ®µ
- * -1 è¡¨ç¤ºæœªçŸ¥
+ * Éú³É http Content-Range ×Ö¶Î
+ * -1 ±íÊ¾Î´Öª
  **/
 // static std::string make_content_range(
 //     const long long start=-1, const long long end=-1, const long long size=-1, 
@@ -911,7 +911,7 @@ void CommandHandler::fileUpload()
 //     return field;
 // }
 
-// æ–‡ä»¶é¢„ä¸‹è½½
+// ÎÄ¼şÔ¤ÏÂÔØ
 void CommandHandler::filePreDownload()
 {
     resolveCORS("/api/predownload");
@@ -924,7 +924,7 @@ void CommandHandler::filePreDownload()
         
         try {
             auto user = verify_token(req);
-            // è·å–ä¸‹è½½æ–‡ä»¶ç­‰ä¿¡æ¯
+            // »ñÈ¡ÏÂÔØÎÄ¼şµÈĞÅÏ¢
             std::string path = req_body.at("path");
             FNode f;
             int _ret = file_system_manager().getFile(
@@ -932,7 +932,7 @@ void CommandHandler::filePreDownload()
             );
 
             if (_ret == 0) {
-                // æŸ¥è¯¢æˆåŠŸ
+                // ²éÑ¯³É¹¦
                 // url = "/download/" + f.file_hash;
                 hash = f.file_hash;
                 size = f.file_size;
@@ -978,7 +978,7 @@ void CommandHandler::filePreDownload()
 //     return size; 
 // }
 
-// æ–‡ä»¶ä¸‹è½½
+// ÎÄ¼şÏÂÔØ
 void CommandHandler::fileDownload()
 {
     resolveCORS("/api/download");
@@ -991,20 +991,20 @@ void CommandHandler::fileDownload()
         
         try {
             // user = verify_token(req);
-            // è·å–ä¸Šä¼ æ–‡ä»¶åˆ‡ç‰‡ä¿¡æ¯
+            // »ñÈ¡ÉÏ´«ÎÄ¼şÇĞÆ¬ĞÅÏ¢
             md5 = req.get_param_value("md5");
             offset = stoll(req.get_param_value("offset"));
             length = stoll(req.get_param_value("length"));
-            // è·å–æ–‡ä»¶æ•°æ®
-            // æ ¹æ®md5å€¼è®¡ç®—æ–‡ä»¶å¤§å°
+            // »ñÈ¡ÎÄ¼şÊı¾İ
+            // ¸ù¾İmd5Öµ¼ÆËãÎÄ¼ş´óĞ¡
             string file_path = TransferHandler::Instance().hashToFPath(md5);
 
             char* buf = new char[length];
             int _ret = TransferHandler::Instance().getFileContent(file_path, offset, length, buf);
             if (_ret == 0) {
-                // å†™å…¥bodyä¸­
+                // Ğ´ÈëbodyÖĞ
                 res.body = string(buf, length);
-                // è®¾ç½®content-range
+                // ÉèÖÃcontent-range
                 res.set_header("Accept-Ranges", "bytes");
                 res.set_header("Content-Type", "application/octet-stream");
                 
@@ -1056,9 +1056,9 @@ void CommandHandler::fileDownload()
 //         /// TODO: file download
 //         try {
 //             user = verify_token(req);
-//             // è·å–ä¸‹è½½æ–‡ä»¶ç­‰ä¿¡æ¯
+//             // »ñÈ¡ÏÂÔØÎÄ¼şµÈĞÅÏ¢
 //             file_md5 = req.path.substr(string("/download/").length());
-//             // æ ¹æ®md5å€¼è®¡ç®—æ–‡ä»¶å¤§å°
+//             // ¸ù¾İmd5Öµ¼ÆËãÎÄ¼ş´óĞ¡
 //             string file_path = TransferHandler::Instance().hashToFPath(file_md5);
 //             auto file_size = get_file_size(file_path.c_str());
 //             if (byte_end > file_size || byte_end == -1) {
@@ -1074,9 +1074,9 @@ void CommandHandler::fileDownload()
 //                 byte_end - byte_beg + 1, buf);
             
 //             if (_ret == 0) {
-//                 // å†™å…¥bodyä¸­
+//                 // Ğ´ÈëbodyÖĞ
 //                 res.body = string(buf, byte_end - byte_beg + 1);
-//                 // è®¾ç½®content-range
+//                 // ÉèÖÃcontent-range
 //                 res.set_header("Accept-Ranges", "bytes");
 //                 res.set_header("Content-Range",
 //                     make_content_range(byte_beg, byte_end, file_size));
@@ -1116,7 +1116,7 @@ void CommandHandler::fileDownload()
 
 void CommandHandler::mountDisk()
 {
-    // æŒ‚è½½ç›®å½•
+    // ¹ÒÔØÄ¿Â¼
     if (access(ROOT_PATH.c_str(), F_OK) == -1) {
         if (mkdir(ROOT_PATH.c_str(), S_IRWXU) == -1) {
             LogC::log_printf("user permission deny.\n");
@@ -1135,13 +1135,13 @@ void CommandHandler::mountDisk()
             // user = verify_token(req);
             user = "someone";
 
-            // ä¸‹é¢åˆ¤æ–­ç”¨æˆ·æ˜¯å¦æ‹¥æœ‰æ­¤æ–‡ä»¶
+            // ÏÂÃæÅĞ¶ÏÓÃ»§ÊÇ·ñÓµÓĞ´ËÎÄ¼ş
             // bool is_include;
             // int _ret = file_system_manager().include(
             //     path_join(user, {"/"}), file_md5, is_include
             // );
             // if (_ret == 0 && is_include) {
-            //     // ç”¨æˆ·ç¡®å®æ‹¥æœ‰æ­¤æ–‡ä»¶
+            //     // ÓÃ»§È·ÊµÓµÓĞ´ËÎÄ¼ş
 
             // } 
             
@@ -1161,13 +1161,13 @@ void CommandHandler::mountDisk()
             msg = "invalid login";
         }
         if (ret < 0) {
-            // é”™è¯¯äº†å°±åˆ«æƒ³æ‹¿åˆ°æ­£ç¡®ä¿¡æ¯
+            // ´íÎóÁË¾Í±ğÏëÄÃµ½ÕıÈ·ĞÅÏ¢
             res.body = msg;
             LogC::log_printf("%s user %s download file %s: %s\n", 
                 req.remote_addr.c_str(), user.c_str(), 
                 file_md5.c_str(), msg.c_str());
         } else {
-            // ä¿¡æ¯æ­£ç¡®ï¼Œæ·»åŠ disposition
+            // ĞÅÏ¢ÕıÈ·£¬Ìí¼Ódisposition
             string disposition = "attachment;filename=" + file_md5;
             res.set_header("Content-Disposition", disposition);
             res.set_header("Access-Control-Allow-Origin", "*");

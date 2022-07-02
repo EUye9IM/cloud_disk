@@ -1,11 +1,11 @@
 /***
- * CommandHandler ç±»å£°æ˜
- * CommandHandler ä½œä¸ºhttp serverç«¯ï¼Œæ¥æ”¶ç”¨æˆ·è¯·æ±‚ï¼Œå¹¶è½¬å‘ç»™ä¸‹å±‚æ¨¡å—
+ * CommandHandler ÀàÉùÃ÷
+ * CommandHandler ×÷Îªhttp server¶Ë£¬½ÓÊÕÓÃ»§ÇëÇó£¬²¢×ª·¢¸øÏÂ²ãÄ£¿é
  **/
 #ifndef COMMAND_HANDLER_H
 #define COMMAND_HANDLER_H
 
-/* ä¸ªäººæ¡ä»¶ç¼–è¯‘è°ƒè¯• */
+/* ¸öÈËÌõ¼ş±àÒëµ÷ÊÔ */
 #include <vector>
 #define __ANAKIN_DEBUG__
 
@@ -25,22 +25,22 @@ class CommandHandler {
 public:
     explicit CommandHandler(const std::string="0.0.0.0", const int port=8000);
     ~CommandHandler();
-    /* ç¦æ­¢æ‹·è´æ„é€ å‡½æ•°ä¸æ‹·è´èµ‹å€¼æ“ä½œ */
+    /* ½ûÖ¹¿½±´¹¹Ôìº¯ÊıÓë¿½±´¸³Öµ²Ù×÷ */
     CommandHandler(const CommandHandler&) = delete;
     CommandHandler& operator = (const CommandHandler&) = delete;
 
 protected:
-    /* åˆå§‹åŒ–æœåŠ¡å™¨ï¼Œç»‘å®šåœ°å€ä»¥åŠç«¯å£ï¼Œå¹¶ä¸”é…ç½®è·¯ç”±ï¼Œæ³¨æ„çº¿ç¨‹ä¼šé˜»å¡ */
+    /* ³õÊ¼»¯·şÎñÆ÷£¬°ó¶¨µØÖ·ÒÔ¼°¶Ë¿Ú£¬²¢ÇÒÅäÖÃÂ·ÓÉ£¬×¢ÒâÏß³Ì»á×èÈû */
     int initServer(const std::string ip_address, const int port);
-    /* è§£å†³æœåŠ¡å™¨è·¨åŸŸé—®é¢˜ */
+    /* ½â¾ö·şÎñÆ÷¿çÓòÎÊÌâ */
     void resolveCORS(std::string);
-    /* ç”¨æˆ·ç›¸å…³è·¯ç”±è®¾ç½® */
+    /* ÓÃ»§Ïà¹ØÂ·ÓÉÉèÖÃ */
     void userRouterConfigure();
     void userLogin();
     void userSignup();
     void userLogout();
     void userChangepass();
-    /* æ–‡ä»¶è·¯ç”±é…ç½® */
+    /* ÎÄ¼şÂ·ÓÉÅäÖÃ */
     void fileRouterConfigure();
     void fileList();
     void fileNewFolder();
@@ -53,25 +53,25 @@ protected:
     void filePreUpload();
     void fileUpload();
 
-    /* æ–‡ä»¶æŒ‚è½½ */
+    /* ÎÄ¼ş¹ÒÔØ */
     void mountDisk();
 
     void routeTest();
 
-    // ç”Ÿæˆæ–‡ä»¶æ ‘
+    // Éú³ÉÎÄ¼şÊ÷
     int generateFileTree(std::string path, int& count, std::vector<nlohmann::json>&);
 
-    /* åˆå§‹åŒ– UserInfoManager */
+    /* ³õÊ¼»¯ UserInfoManager */
     int initUserManager();
 
 private:
-    /* éªŒè¯responseçš„tokenï¼ŒæŠ›å‡ºtoken_exceptionå¼‚å¸¸ */
+    /* ÑéÖ¤responseµÄtoken£¬Å×³ötoken_exceptionÒì³£ */
     std::string verify_token(const httplib::Request&) const;
 
     /* http server */
     httplib::Server server_;
 
-    /* user æ•°æ®åº“ */
+    /* user Êı¾İ¿â */
     std::unique_ptr<UserInfoManager> user_manager_;
 
 };

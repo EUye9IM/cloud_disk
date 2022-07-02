@@ -9,7 +9,7 @@ const int LOG_FLAG_TIME = 1 << 2;
 const int LOG_FLAG_NORMAL = 1 << 3;
 const int LOG_FLAG_DEBUG = 1 << 4;
 const int LOG_FLAG_FATAL = 1 << 5;
-// è¡¥å……flag:å†™å…¥æ–‡ä»¶çš„åŒæ—¶å†™å…¥æ ‡å‡†è¾“å‡º
+// ²¹³äflag:Ð´ÈëÎÄ¼þµÄÍ¬Ê±Ð´Èë±ê×¼Êä³ö
 const int LOG_FLAG_STDOUT = 1 << 6;
 
 int log_open(const char *file_path);

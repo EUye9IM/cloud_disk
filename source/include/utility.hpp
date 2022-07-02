@@ -1,5 +1,5 @@
 /**
- * utility è´Ÿè´£æ”¾ç½®éƒ¨åˆ†å…¬ç”¨å‡½æ•°
+ * utility ¸ºÔğ·ÅÖÃ²¿·Ö¹«ÓÃº¯Êı
  **/
 
 #ifndef UTILITY_HPP
@@ -9,13 +9,13 @@
 #include "file_system_manager.h"
 #include "sql_config.h"
 
-// æ•°æ®åº“æ˜¯å¦åˆå§‹åŒ–
+// Êı¾İ¿âÊÇ·ñ³õÊ¼»¯
 // #define __DATABASE_INIT__
 
 #define UNUSED_VARIABLE(x) ((void)(x))
 
-// æ•°æ®åº“é…ç½®
-// é¦–å…ˆéœ€è¦åˆ›å»ºæ•°æ®åº“ disk
+// Êı¾İ¿âÅäÖÃ
+// Ê×ÏÈĞèÒª´´½¨Êı¾İ¿â disk
 static SqlConfig sql_config = {
     .host = "127.0.0.1",
     .port = 3306,
@@ -25,19 +25,19 @@ static SqlConfig sql_config = {
     .charset = "utf8",
 };
 
-// å®é™…æ–‡ä»¶çš„å­˜å‚¨ä½ç½®
+// Êµ¼ÊÎÄ¼şµÄ´æ´¢Î»ÖÃ
 const std::string ROOT_PATH = "./DISK";
 
-// æ— ç”¨å‡½æ•°ï¼Œé˜²æ­¢è­¦å‘Š
+// ÎŞÓÃº¯Êı£¬·ÀÖ¹¾¯¸æ
 inline void unused_variable() {
     UNUSED_VARIABLE(sql_config);
     UNUSED_VARIABLE(ROOT_PATH);
 }
 
-// è·å– FileSystemManager çš„å•ä¾‹æ¨¡å¼
+// »ñÈ¡ FileSystemManager µÄµ¥ÀıÄ£Ê½
 FileSystemManager& file_system_manager();
 
-// è·¯å¾„æ‹¼æ¥
+// Â·¾¶Æ´½Ó
 std::string path_join(const std::string user, const std::initializer_list<std::string>);
 std::string path_join(const std::initializer_list<std::string>);
 

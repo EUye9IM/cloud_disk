@@ -25,7 +25,7 @@ int fillFileContent(std::string fpath,long long begin,int size,void* content);
 std::string hashToFPath(std::string hash);
 std::string pathToFPath(std::string path);
 
-// æ·»åŠ ä¸€ä¸ªå•ä¾‹
+// Ìí¼ÓÒ»¸öµ¥Àı
 static TransferHandler& Instance();
 
 private:
