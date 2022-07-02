@@ -1,6 +1,7 @@
 #!/bin/sh
 SRV=/etc/systemd/system/clouddisk.service
-systemctl stop webrtc
-systemctl disable webrtc
+
+systemctl stop clouddisk
+systemctl disable clouddisk
 rm $SRV
 rm /usr/bin/clouddisk
