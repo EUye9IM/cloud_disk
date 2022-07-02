@@ -6,7 +6,7 @@ SRC			= src
 INCLUDE		= include
 BUILD		= build
 
-EXECUTABLE	= clouddisk.exe
+EXECUTABLE	= clouddisk
 
 LIBS		= -lmariadb -lpthread -lcrypto
 
