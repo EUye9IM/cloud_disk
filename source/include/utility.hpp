@@ -20,7 +20,7 @@ static SqlConfig sql_config = {
     .host = "127.0.0.1",
     .port = 3306,
     .user = "root",
-    .pass = "root",
+    .pass = "root123",
     .database_name = "disk",
     .charset = "utf8",
 };
