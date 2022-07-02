@@ -5,7 +5,7 @@
 
 static std::once_flag flag;
 
-// è·å– FileSystemManager çš„å•ä¾‹æ¨¡å¼
+// »ñÈ¡ FileSystemManager µÄµ¥ÀıÄ£Ê½
 FileSystemManager& file_system_manager()
 {
     static FileSystemManager fsm;
@@ -33,7 +33,7 @@ std::string path_join(
         } else {
             result += '/' + path;
         }
-        // å¦‚æœ result æœ€åæœ‰'/'ï¼Œå»é™¤ï¼Œæ–¹ä¾¿ä¸‹ä¸€æ¬¡è¿æ¥è·¯å¾„
+        // Èç¹û result ×îºóÓĞ'/'£¬È¥³ı£¬·½±ãÏÂÒ»´ÎÁ¬½ÓÂ·¾¶
         if (result.back() == '/') {
             result.pop_back();
         }
@@ -51,7 +51,7 @@ std::string path_join(
         } else {
             result += '/' + path;
         }
-        // å¦‚æœ result æœ€åæœ‰'/'ï¼Œå»é™¤ï¼Œæ–¹ä¾¿ä¸‹ä¸€æ¬¡è¿æ¥è·¯å¾„
+        // Èç¹û result ×îºóÓĞ'/'£¬È¥³ı£¬·½±ãÏÂÒ»´ÎÁ¬½ÓÂ·¾¶
         if (result.back() == '/') {
             result.pop_back();
         }

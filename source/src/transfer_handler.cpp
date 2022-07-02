@@ -11,7 +11,7 @@
 
 TransferHandler::TransferHandler(std::string rootpath){
     _rootPath=rootpath;
-    //å»ºç«‹æ ¹ç›®å½•
+    //½¨Á¢¸ùÄ¿Â¼
     if(access(_rootPath.c_str(),F_OK)==-1){
         if(mkdir(_rootPath.c_str(),S_IRWXU)==-1){
             std::cout<<"Please check user permission.";
@@ -95,7 +95,7 @@ std::string TransferHandler::pathToFPath(std::string path){
     return toRet;
 }
 
-// èŽ·å–åˆ°å•ä¾‹
+// »ñÈ¡µ½µ¥Àý
 TransferHandler& TransferHandler::Instance()
 {
     static TransferHandler ts(ROOT_PATH);

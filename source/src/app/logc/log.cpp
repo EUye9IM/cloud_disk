@@ -67,7 +67,7 @@ int log_println(const char *str) {
 	_log_head();
 	fprintf(_file, "%s\n", str);
 	fflush(_file);
-	// è¡¥å……è¾“å‡ºåˆ° stdout
+	// ²¹³äÊä³öµ½ stdout
 	if (_flag & LOG_FLAG_STDOUT) {
 		printf("%s\n", str);
 		fflush(stdout);
@@ -100,7 +100,7 @@ int log_fatal(const char *fmt, ...) {
 	vfprintf(_file, fmt, ap);
 	va_end(ap);
 	fflush(_file);
-	// è¾“å‡ºåˆ° stdout
+	// Êä³öµ½ stdout
 	if (_flag & LOG_FLAG_STDOUT) {
 		va_start(ap, fmt);
 		vprintf(fmt, ap);

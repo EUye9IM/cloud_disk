@@ -1,6 +1,6 @@
 /**
-* Access Queueæ¨¡å—
-* ç”¨äºç»´æŠ¤ä¸€ä¸ªå†™æ–‡ä»¶é˜Ÿåˆ—ï¼Œæ¯å½“æœ‰æ–°çš„ä¸Šä¼ æ–‡ä»¶è¯·æ±‚åŠ å…¥é˜Ÿåˆ—æ—¶ï¼Œè¯„ä¼°è¯¥è¯·æ±‚å¹¶åˆ†é…ä»»åŠ¡ã€‚
+* Access QueueÄ£¿é
+* ÓÃÓÚÎ¬»¤Ò»¸öĞ´ÎÄ¼ş¶ÓÁĞ£¬Ã¿µ±ÓĞĞÂµÄÉÏ´«ÎÄ¼şÇëÇó¼ÓÈë¶ÓÁĞÊ±£¬ÆÀ¹À¸ÃÇëÇó²¢·ÖÅäÈÎÎñ¡£
 */
 
 #include "access_queue.h"
@@ -17,19 +17,19 @@ using namespace std;
 
 AccessQueue::~AccessQueue()
 {
-    // æ¸…ç©º map ç©ºé—´
+    // Çå¿Õ map ¿Õ¼ä
     upload_.clear();
 }
 
-// å¯åŠ¨ä¸€ä¸ªæ–‡ä»¶ä¸Šä¼ é˜Ÿåˆ—
-// å¯ç”¨æ­¤å‡½æ•°ä¹‹å‰ï¼Œå·²ç»è¡¨æ˜ä¸Šä¼ æ–‡ä»¶æœåŠ¡ç«¯ç½‘ç›˜å¹¶ä¸å­˜åœ¨
+// Æô¶¯Ò»¸öÎÄ¼şÉÏ´«¶ÓÁĞ
+// ÆôÓÃ´Ëº¯ÊıÖ®Ç°£¬ÒÑ¾­±íÃ÷ÉÏ´«ÎÄ¼ş·şÎñ¶ËÍøÅÌ²¢²»´æÔÚ
 int AccessQueue::startFileQueue(
     std::string path, std::string file_md5, size_q file_size)
 {
     lock_guard<mutex> lock(m_upload_);
-    // æŸ¥æ‰¾æ˜¯å¦å·²ç»åœ¨ä¸Šä¼ é˜Ÿåˆ—ä¸­
+    // ²éÕÒÊÇ·ñÒÑ¾­ÔÚÉÏ´«¶ÓÁĞÖĞ
     if (upload_.find(file_md5) == upload_.end()) {
-        // ä¸åœ¨ä¸Šä¼ é˜Ÿåˆ—ï¼Œåˆ›å»º
+        // ²»ÔÚÉÏ´«¶ÓÁĞ£¬´´½¨
         size_q slice_num = (file_size + FILE_SLICE_SIZE - 1) / FILE_SLICE_SIZE;
 
         FileUploadInfo file_info = {
@@ -37,14 +37,14 @@ int AccessQueue::startFileQueue(
             file_size, {path}, string(slice_num+1, '0')
         };
 
-        // è®°å½•åˆ‡ç‰‡çŠ¶æ€ï¼Œç›®å‰é‡‡ç”¨stringè®°å½•
+        // ¼ÇÂ¼ÇĞÆ¬×´Ì¬£¬Ä¿Ç°²ÉÓÃstring¼ÇÂ¼
 
-        /// TODO: éœ€è¦æ·»åŠ æ–‡ä»¶åˆ‡ç‰‡çŠ¶æ€çš„è®°å½•æ–‡ä»¶
+        /// TODO: ĞèÒªÌí¼ÓÎÄ¼şÇĞÆ¬×´Ì¬µÄ¼ÇÂ¼ÎÄ¼ş
         // std::string temp_file = TEMP + file_md5 + '~';
         // std::ofstream fout;
         // fout.open(temp_file, ios::binary);
         // if (!fout.is_open()) {
-        //     return -1;  // åˆ›å»ºä¸´æ—¶æ–‡ä»¶å¤±è´¥
+        //     return -1;  // ´´½¨ÁÙÊ±ÎÄ¼şÊ§°Ü
         // }
         // auto str = new string(slice_num, '0');
         // fout.write(str->c_str(), slice_num);
@@ -53,11 +53,11 @@ int AccessQueue::startFileQueue(
         
         upload_.insert(std::make_pair(file_md5, file_info));
 
-        // åˆ›å»ºå®é™…æ–‡ä»¶ï¼Œè°ƒç”¨ä¼ è¾“æ¨¡å—
+        // ´´½¨Êµ¼ÊÎÄ¼ş£¬µ÷ÓÃ´«ÊäÄ£¿é
         TransferHandler::Instance().createFile(file_size, file_md5);
 
     } else {
-        // å·²ç»æœ‰å…¶ä»–äººåœ¨ä¸Šä¼ ï¼Œè®°å½•æ–‡ä»¶è·¯å¾„å³å¯
+        // ÒÑ¾­ÓĞÆäËûÈËÔÚÉÏ´«£¬¼ÇÂ¼ÎÄ¼şÂ·¾¶¼´¿É
         upload_.find(file_md5)->second.files_.push_back(path);
     }
 
@@ -70,12 +70,12 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
     lock_guard<mutex> lock(m_upload_);
     
     auto file = upload_.find(file_md5);
-    // æœªå‘ç°æ–‡ä»¶ä¼ è¾“ä¿¡æ¯ï¼Œè¯´æ˜å·²ç»ç”±ä»–äººä¸Šä¼ å®Œæˆ
+    // Î´·¢ÏÖÎÄ¼ş´«ÊäĞÅÏ¢£¬ËµÃ÷ÒÑ¾­ÓÉËûÈËÉÏ´«Íê³É
     if (file == upload_.end()) {
         return 0;
     }
 
-    // æ£€éªŒæ˜¯å¦æ­£ç¡®ï¼Œä¸æ­£ç¡®ç›´æ¥é‡æ–°ä¸Šä¼ 
+    // ¼ìÑéÊÇ·ñÕıÈ·£¬²»ÕıÈ·Ö±½ÓÖØĞÂÉÏ´«
     do {
         if (current_num == 0)
             break;
@@ -83,7 +83,7 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
             data.length() == AccessQueue::FILE_SLICE_SIZE) {
             break;
         }
-        // æœ€åä¸€ç‰‡çš„åˆ¤æ–­å¤„ç†
+        // ×îºóÒ»Æ¬µÄÅĞ¶Ï´¦Àí
         size_q final_slice_len = file->second.file_size_ % AccessQueue::FILE_SLICE_SIZE;
         if (final_slice_len == 0)
             final_slice_len = AccessQueue::FILE_SLICE_SIZE;
@@ -94,14 +94,14 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
             break;
         }
 
-        // æ²¡æœ‰é€šè¿‡æ£€éªŒï¼Œè¿”å›æœªå®Œæˆçš„æœ€å°åºå·
+        // Ã»ÓĞÍ¨¹ı¼ìÑé£¬·µ»ØÎ´Íê³ÉµÄ×îĞ¡ĞòºÅ
         cout << "min unfinish num: " << file->second.min_unfinish_num_ << endl;
         return file->second.min_unfinish_num_;
     } while (true);
     
-    // å®Œæˆ current_num çš„æ ‡è®°ï¼Œæ›´æ–°æœªå®Œæˆçš„æœ€å°åˆ‡ç‰‡å·
+    // Íê³É current_num µÄ±ê¼Ç£¬¸üĞÂÎ´Íê³ÉµÄ×îĞ¡ÇĞÆ¬ºÅ
     if (current_num > 0 && file->second.status[current_num] == '0') {
-        // å†™å…¥å®é™…æ–‡ä»¶
+        // Ğ´ÈëÊµ¼ÊÎÄ¼ş
         int ret = TransferHandler::Instance().fillFileContent(
             TransferHandler::Instance().hashToFPath(file_md5),
             AccessQueue::FILE_SLICE_SIZE * (current_num - 1),
@@ -109,18 +109,18 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
             (void*)(data.c_str())
         );
         if (ret < 0) {
-            // å†™å…¥å¤±è´¥ï¼Œéœ€è¦å†æ¬¡ä¸Šä¼ 
+            // Ğ´ÈëÊ§°Ü£¬ĞèÒªÔÙ´ÎÉÏ´«
             return current_num;
         }
 
-        // æ ‡è®°ä¸ºå·²ç»å®Œæˆ
+        // ±ê¼ÇÎªÒÑ¾­Íê³É
         file->second.status[current_num] = '1';
         int num = file->second.min_unfinish_num_;
         while (file->second.status[num] == '1') {
             num++;
         }
         file->second.min_unfinish_num_ = num;
-        // è·å–å®Œæˆæ•°ç›®
+        // »ñÈ¡Íê³ÉÊıÄ¿
         count = num -1;
         auto &s = file->second.status;
         for (size_q i = num; i < static_cast<size_q>(s.length()); i++) {
@@ -130,22 +130,22 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
         }
     }
 
-    size_q next_task = 0;   // æ¥ä¸‹æ¥éœ€è¦ä¸Šä¼ çš„åˆ‡ç‰‡
-    // è¿˜æœ‰æœªåˆ†é…çš„æ–‡ä»¶åˆ‡ç‰‡
+    size_q next_task = 0;   // ½ÓÏÂÀ´ĞèÒªÉÏ´«µÄÇĞÆ¬
+    // »¹ÓĞÎ´·ÖÅäµÄÎÄ¼şÇĞÆ¬
     if (file->second.max_allocate_num_ < file->second.slice_num_) {
         next_task = ++file->second.max_allocate_num_;
     }
-    // å·²ç»å…¨éƒ¨åˆ†é…ï¼Œä½¿ç”¨æœ€å°çš„æœªå®Œæˆçš„åºå·
+    // ÒÑ¾­È«²¿·ÖÅä£¬Ê¹ÓÃ×îĞ¡µÄÎ´Íê³ÉµÄĞòºÅ
     else {
         next_task = file->second.min_unfinish_num_;
     }
 
-    // å·²ç»å…¨éƒ¨å®Œæˆï¼Œnext_task = 0ï¼ŒåŒæ—¶å†™å…¥ç”¨æˆ·æ–‡ä»¶ï¼Œé”€æ¯ä¸´æ—¶æ•°æ®
-    // åŒæ—¶ä¹Ÿå¤„ç† 0 æ–‡ä»¶
+    // ÒÑ¾­È«²¿Íê³É£¬next_task = 0£¬Í¬Ê±Ğ´ÈëÓÃ»§ÎÄ¼ş£¬Ïú»ÙÁÙÊ±Êı¾İ
+    // Í¬Ê±Ò²´¦Àí 0 ÎÄ¼ş
     if (file->second.min_unfinish_num_ > file->second.slice_num_ || 
         file->second.file_size_ == 0) {
         next_task = 0;
-        // å†™å…¥ç”¨æˆ·æ–‡ä»¶ç³»ç»Ÿ
+        // Ğ´ÈëÓÃ»§ÎÄ¼şÏµÍ³
         for (const auto& path : file->second.files_) {
             int _ret = file_system_manager().makeFile(
                 path, file_md5, file->second.file_size_
@@ -153,7 +153,7 @@ size_q AccessQueue::getTask(const std::string file_md5, size_q& count,
             LogC::log_printf("make file %s: %s\n",
                 path.c_str(), file_system_manager().error(_ret));
         }
-        // é‡Šæ”¾ç©ºé—´
+        // ÊÍ·Å¿Õ¼ä
         file->second.files_.clear();
         upload_.erase(file);
     }

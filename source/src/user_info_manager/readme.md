@@ -1,35 +1,35 @@
 # UserInfoManager
 
-## ç±»åž‹
+## ÀàÐÍ
 
-### UserInfoManager ç±»
+### UserInfoManager Àà
 
-ç»´æŠ¤ç”¨æˆ·æ•°æ®ã€‚ä¸»è¦åŠŸèƒ½æœ‰ï¼š
+Î¬»¤ÓÃ»§Êý¾Ý¡£Ö÷Òª¹¦ÄÜÓÐ£º
 
-- æ³¨å†Œ
-- ç™»å½•
-- æ”¹å¯†
-- æ³¨é”€
+- ×¢²á
+- µÇÂ¼
+- ¸ÄÃÜ
+- ×¢Ïú
 
-## å¤´æ–‡ä»¶
+## Í·ÎÄ¼þ
 
 `user_info_manager.h`
 
-## æˆå‘˜å‡½æ•°
+## ³ÉÔ±º¯Êý
 
-æ‰€æœ‰è¿”å›žå€¼intçš„å‡½æ•°çš†æˆåŠŸè¿”å›ž0.
+ËùÓÐ·µ»ØÖµintµÄº¯Êý½Ô³É¹¦·µ»Ø0.
 
-è¿”å›žå€¼å¯ä»¥ä½¿ç”¨æˆå‘˜å‡½æ•° `static const char *error(int error_no)` èŽ·å–é”™è¯¯ä¿¡æ¯ã€‚
+·µ»ØÖµ¿ÉÒÔÊ¹ÓÃ³ÉÔ±º¯Êý `static const char *error(int error_no)` »ñÈ¡´íÎóÐÅÏ¢¡£
 
-ç‰¹æ®Šåœ°ï¼Œå½“è¿”å›žå€¼ä¸º `_UserInfoManager::_RET_SQL_ERR` æ—¶è°ƒç”¨ `const char *getMysqlError()` èŽ·å¾—é¢å¤–çš„é”™è¯¯ä¿¡æ¯ã€‚ä¸€èˆ¬ç”¨ä¸ä¸Šï¼Œå‡ºäº†è¿™ä¸ªé”™åŸºæœ¬æ˜¯æˆ‘å†™é”™äº†ï¼ˆæˆ–è€…æ•°æ®åº“è¿žæŽ¥å¤±è´¥ï¼‰ï¼Œæ‰€ä»¥è¿™åŸºæœ¬ç”¨äºŽè°ƒè¯•ã€‚
+ÌØÊâµØ£¬µ±·µ»ØÖµÎª `_UserInfoManager::_RET_SQL_ERR` Ê±µ÷ÓÃ `const char *getMysqlError()` »ñµÃ¶îÍâµÄ´íÎóÐÅÏ¢¡£Ò»°ãÓÃ²»ÉÏ£¬³öÁËÕâ¸ö´í»ù±¾ÊÇÎÒÐ´´íÁË£¨»òÕßÊý¾Ý¿âÁ¬½ÓÊ§°Ü£©£¬ËùÒÔÕâ»ù±¾ÓÃÓÚµ÷ÊÔ¡£
 
-### æ•°æ®åº“ç›¸å…³
+### Êý¾Ý¿âÏà¹Ø
 
-#### è¿žæŽ¥æ•°æ®åº“
+#### Á¬½ÓÊý¾Ý¿â
 
 `int connect(const SqlConfig &sql_config);`
 
-ç¤ºä¾‹ï¼š
+Ê¾Àý£º
 
 ```c++
 SqlConfig sql_config = {
@@ -49,48 +49,48 @@ if (int ret = um.connect(sql_config)) {
 }
 ```
 
-#### åˆå§‹åŒ–æ•°æ®åº“
+#### ³õÊ¼»¯Êý¾Ý¿â
 
-æ•°æ®åº“å»ºè¡¨ä¹‹ç±»çš„æ“ä½œï¼Œç³»ç»Ÿåˆå§‹åŒ–æ—¶ä½¿ç”¨ã€‚
+Êý¾Ý¿â½¨±íÖ®ÀàµÄ²Ù×÷£¬ÏµÍ³³õÊ¼»¯Ê±Ê¹ÓÃ¡£
 
 `int initDatabase();`
 
-### ç”¨æˆ·ç®¡ç†
+### ÓÃ»§¹ÜÀí
 
-#### æ³¨å†Œ
+#### ×¢²á
 
 `int add(const std::string &user, const std::string &pass);`
 
-æˆåŠŸè¿”å›ž 0ï¼Œå¤±è´¥åŸºæœ¬æ˜¯ç”¨æˆ·é‡åã€‚
+³É¹¦·µ»Ø 0£¬Ê§°Ü»ù±¾ÊÇÓÃ»§ÖØÃû¡£
 
-#### ç™»å½•
+#### µÇÂ¼
 
 `int check(const std::string &user, const std::string &pass);`
 
-æˆåŠŸè¿”å›ž 0ï¼Œå¤±è´¥åŸºæœ¬æ˜¯ç”¨æˆ·åæˆ–å¯†ç é”™è¯¯ã€‚
+³É¹¦·µ»Ø 0£¬Ê§°Ü»ù±¾ÊÇÓÃ»§Ãû»òÃÜÂë´íÎó¡£
 
-#### æ”¹å¯†
+#### ¸ÄÃÜ
 
 `int change(const std::string &user, const std::string &pass);`
 
-æˆåŠŸè¿”å›ž 0ï¼ŒåŸºæœ¬ä¸å¤±è´¥ã€‚å³ä½¿ç”¨æˆ·ä¸å­˜åœ¨ä¹Ÿè¿”å›ž0ï¼Œè™½ç„¶ä¸ä¼šæœ‰ä»»ä½•ä½œç”¨ã€‚
+³É¹¦·µ»Ø 0£¬»ù±¾²»Ê§°Ü¡£¼´Ê¹ÓÃ»§²»´æÔÚÒ²·µ»Ø0£¬ËäÈ»²»»áÓÐÈÎºÎ×÷ÓÃ¡£
 
-#### æ³¨é”€
+#### ×¢Ïú
 
 `int del(const std::string &user);`
 
-æˆåŠŸè¿”å›ž 0ï¼ŒåŸºæœ¬ä¸å¤±è´¥ã€‚å³ä½¿ç”¨æˆ·ä¸å­˜åœ¨ä¹Ÿè¿”å›ž0ï¼Œè™½ç„¶ä¸ä¼šæœ‰ä»»ä½•ä½œç”¨ã€‚
+³É¹¦·µ»Ø 0£¬»ù±¾²»Ê§°Ü¡£¼´Ê¹ÓÃ»§²»´æÔÚÒ²·µ»Ø0£¬ËäÈ»²»»áÓÐÈÎºÎ×÷ÓÃ¡£
 
-### å…¶ä»–
+### ÆäËû
 
-#### èŽ·å¾—é”™è¯¯ç ä¿¡æ¯
+#### »ñµÃ´íÎóÂëÐÅÏ¢
 
 `static const char *error(int error_no);`
 
-error_no æ˜¯ _UserInfoManager å‘½åç©ºé—´ä¸­çš„å¸¸é‡ã€‚
+error_no ÊÇ _UserInfoManager ÃüÃû¿Õ¼äÖÐµÄ³£Á¿¡£
 
-#### èŽ·å–æ•°æ®åº“é”™è¯¯ä¿¡æ¯
+#### »ñÈ¡Êý¾Ý¿â´íÎóÐÅÏ¢
 
-æœ‰æ—¶å€™ä¼šæœ‰æ•°æ®åº“é”™è¯¯çš„ä¿¡æ¯ï¼Œè¿™ä¸ªå¯ä»¥å–åˆ°é”™è¯¯ä¿¡æ¯ã€‚
+ÓÐÊ±ºò»áÓÐÊý¾Ý¿â´íÎóµÄÐÅÏ¢£¬Õâ¸ö¿ÉÒÔÈ¡µ½´íÎóÐÅÏ¢¡£
 
 `const char* getMysqlError();`

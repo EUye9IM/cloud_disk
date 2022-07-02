@@ -1,6 +1,6 @@
 /**
-* Access Queue æ¥å£å£°æ˜
-* Access Queueç”¨äºç»´æŠ¤ä¸€ä¸ªå†™æ–‡ä»¶é˜Ÿåˆ—ï¼Œæ¯å½“æœ‰æ–°çš„ä¸Šä¼ æ–‡ä»¶è¯·æ±‚åŠ å…¥é˜Ÿåˆ—æ—¶ï¼Œè¯„ä¼°è¯¥è¯·æ±‚å¹¶åˆ†é…ä»»åŠ¡ã€‚
+* Access Queue ½Ó¿ÚÉùÃ÷
+* Access QueueÓÃÓÚÎ¬»¤Ò»¸öĞ´ÎÄ¼ş¶ÓÁĞ£¬Ã¿µ±ÓĞĞÂµÄÉÏ´«ÎÄ¼şÇëÇó¼ÓÈë¶ÓÁĞÊ±£¬ÆÀ¹À¸ÃÇëÇó²¢·ÖÅäÈÎÎñ¡£
 */
 #ifndef ACCESS_QUEUE_H
 #define ACCESS_QUEUE_H
@@ -14,59 +14,59 @@
 #include <vector>
 
 // #define configMAX_ACCESS_QUEUE 1024
-// #define configFILE_SLICE_SIZE 1024 //å•ä½KiB
+// #define configFILE_SLICE_SIZE 1024 //µ¥Î»KiB
 
-// æ”¾ç½®ä¸´æ—¶æ–‡ä»¶çš„æ–‡ä»¶å¤¹
+// ·ÅÖÃÁÙÊ±ÎÄ¼şµÄÎÄ¼ş¼Ğ
 const std::string TEMP = "./temp/";
 
 using size_q = long long;
 /*
-* Access Queueç±»å£°æ˜
-* è¦å¯åŠ¨Access Queueæ¨¡å—ï¼Œé¦–å…ˆåˆ›å»ºä¸€ä¸ªAccessQueueå¯¹è±¡ï¼Œç„¶åè°ƒç”¨startAccessQueueå‡½æ•°æ¥å¯åŠ¨ã€‚
+* Access QueueÀàÉùÃ÷
+* ÒªÆô¶¯Access QueueÄ£¿é£¬Ê×ÏÈ´´½¨Ò»¸öAccessQueue¶ÔÏó£¬È»ºóµ÷ÓÃstartAccessQueueº¯ÊıÀ´Æô¶¯¡£
 */
 
 class AccessQueue{
 public:
     static const int FILE_SLICE_SIZE = 1024 * 1024; // 1M
-    // static const int FILE_SLICE_SIZE = 2; // æµ‹è¯•
+    // static const int FILE_SLICE_SIZE = 2; // ²âÊÔ
     explicit AccessQueue() = default;
     ~AccessQueue();
 
-    // è®¾è®¡ä¸ºå•ä¾‹ï¼Œç¦æ­¢æ‹·è´æ„é€ å‡½æ•°ä¸æ‹·è´èµ‹å€¼å‡½æ•°
+    // Éè¼ÆÎªµ¥Àı£¬½ûÖ¹¿½±´¹¹Ôìº¯ÊıÓë¿½±´¸³Öµº¯Êı
     AccessQueue(const AccessQueue&) = delete;
     AccessQueue& operator=(const AccessQueue&) = delete;
 
-    // å•ä¾‹æ¨¡å¼
+    // µ¥ÀıÄ£Ê½
     static AccessQueue& Instance() {
         static AccessQueue aq;
         return aq;
     }
     
-    // æ–‡ä»¶ä¸Šä¼ ä¿¡æ¯
-    // ä»»æ„æ—¶åˆ»ï¼Œä¸€ä¸ªæ–‡ä»¶åˆ‡ç‰‡æœ‰ ä¸Šä¼ å®Œæˆ/ä¸Šä¼ ä¸­/æœªå¼€å§‹ä¸Šä¼  ä¸‰ç§çŠ¶æ€
-    // ç»“æ„ä¸­çš„åºå·ä» 1 å¼€å§‹è®¡ç®—ï¼Œä¸å¤–ç•Œä¿æŒä¸€è‡´
+    // ÎÄ¼şÉÏ´«ĞÅÏ¢
+    // ÈÎÒâÊ±¿Ì£¬Ò»¸öÎÄ¼şÇĞÆ¬ÓĞ ÉÏ´«Íê³É/ÉÏ´«ÖĞ/Î´¿ªÊ¼ÉÏ´« ÈıÖÖ×´Ì¬
+    // ½á¹¹ÖĞµÄĞòºÅ´Ó 1 ¿ªÊ¼¼ÆËã£¬ÓëÍâ½ç±£³ÖÒ»ÖÂ
     struct FileUploadInfo{
-        size_q min_unfinish_num_;    // ä¼ è¾“æœªå®Œæˆçš„åˆ‡ç‰‡çš„æœ€å°åºå·
-        size_q max_allocate_num_;    // å·²ç»åˆ†é…ä¸Šä¼ çš„åˆ‡ç‰‡çš„æœ€å¤§åºå·
-        size_q slice_num_;           // åˆ‡ç‰‡æ€»æ•°
-        size_q file_size_;           // æ–‡ä»¶å¤§å°
-        std::vector<std::string> files_;// è¯¥æ–‡ä»¶å¯¹åº”çš„ç”¨æˆ·çš„æ–‡ä»¶è·¯å¾„
+        size_q min_unfinish_num_;    // ´«ÊäÎ´Íê³ÉµÄÇĞÆ¬µÄ×îĞ¡ĞòºÅ
+        size_q max_allocate_num_;    // ÒÑ¾­·ÖÅäÉÏ´«µÄÇĞÆ¬µÄ×î´óĞòºÅ
+        size_q slice_num_;           // ÇĞÆ¬×ÜÊı
+        size_q file_size_;           // ÎÄ¼ş´óĞ¡
+        std::vector<std::string> files_;// ¸ÃÎÄ¼ş¶ÔÓ¦µÄÓÃ»§µÄÎÄ¼şÂ·¾¶
         std::string status;
     };
     
-    // å¯åŠ¨ä¸€ä¸ªæ–‡ä»¶ä¸Šä¼ é˜Ÿåˆ—ï¼Œä¼ å…¥æ–‡ä»¶è·¯å¾„ã€md5å’Œå¤§å°ï¼Œå¤§å°ä»¥byteè®¡æ•°
-    // è¿”å› 0 è¡¨ç¤ºæˆåŠŸï¼Œè¿”å›è´Ÿæ•°è¡¨ç¤ºå¤±è´¥
+    // Æô¶¯Ò»¸öÎÄ¼şÉÏ´«¶ÓÁĞ£¬´«ÈëÎÄ¼şÂ·¾¶¡¢md5ºÍ´óĞ¡£¬´óĞ¡ÒÔbyte¼ÆÊı
+    // ·µ»Ø 0 ±íÊ¾³É¹¦£¬·µ»Ø¸ºÊı±íÊ¾Ê§°Ü
     int startFileQueue(std::string path, std::string file_md5, size_q file_size);
-    // ä»é˜Ÿåˆ—ä¸­è·å–ä»»åŠ¡ï¼Œä¼ å…¥æ–‡ä»¶è·¯å¾„å’Œå½“å‰æ”¶åˆ°åˆ‡ç‰‡åºå·ä»¥åŠæ•°æ®
-    // è¿”å›åˆ†é…çš„ä»»åŠ¡åºå·ï¼Œ0 ä»£è¡¨æ–‡ä»¶ä¼ è¾“å®Œæˆ
+    // ´Ó¶ÓÁĞÖĞ»ñÈ¡ÈÎÎñ£¬´«ÈëÎÄ¼şÂ·¾¶ºÍµ±Ç°ÊÕµ½ÇĞÆ¬ĞòºÅÒÔ¼°Êı¾İ
+    // ·µ»Ø·ÖÅäµÄÈÎÎñĞòºÅ£¬0 ´ú±íÎÄ¼ş´«ÊäÍê³É
     size_q getTask(const std::string file_md5, size_q& count,
         const size_q current_num=0, const std::string data="");
 
 private:
-    // å­˜å‚¨æ–‡ä»¶md5ä¸æ–‡ä»¶ä¸Šä¼ æƒ…å†µ
+    // ´æ´¢ÎÄ¼şmd5ÓëÎÄ¼şÉÏ´«Çé¿ö
     std::map<std::string, FileUploadInfo> upload_;
-    // std::mutex m_files_;    // files_åŠ é”
-    std::mutex m_upload_;   // upload_åŠ é”
+    // std::mutex m_files_;    // files_¼ÓËø
+    std::mutex m_upload_;   // upload_¼ÓËø
 };
 
 #endif
