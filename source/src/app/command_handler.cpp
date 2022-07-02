@@ -604,8 +604,8 @@ void CommandHandler::fileDelete()
                 }
             }
             // 对删除文件的哈希值进行操作，计数为0删除
-            hash_list.erase(std::unique(hash_list.begin(), hash_list.end()), 
-                hash_list.end());
+            // hash_list.erase(std::unique(hash_list.begin(), hash_list.end()), 
+            //     hash_list.end());
 
             for (const auto& hash : hash_list) {
                 bool is_exist;

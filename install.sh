@@ -1,2 +1,2 @@
 make all -C ./source
-mv 
+mv ./source/clouddisk.exe ./
