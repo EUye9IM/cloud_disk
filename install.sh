@@ -4,7 +4,6 @@ SRV=/etc/systemd/system/clouddisk.service
 
 # compile
 make all -C ./source
-<<<<<<< HEAD
 
 # install
 mkdir -p /usr/bin
@@ -23,6 +22,3 @@ echo "WantedBy=multi-user.target" >> $SRV
 systemctl daemon-reload
 systemctl start clouddisk
 systemctl enable clouddisk
-=======
-mv ./source/clouddisk.exe ./
->>>>>>> 52c441f8b57b2e1304b12145807a8fcc172b9dd7
